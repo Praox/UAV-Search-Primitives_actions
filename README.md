@@ -80,13 +80,35 @@ DDQN:
 ```bash
 python scripts/train.py --algo ddqn --episodes 500 --run-dir runs/ddqn
 ```
-
+```bash
+python scripts/train.py \
+  --algo ddqn \
+  --episodes 300 \
+  --device mps \
+  --train-every 4 \
+  --learning-starts 1000 \
+  --eval-every 50 \
+  --eval-episodes 10 \
+  --seed 0 \
+  --run-dir runs/fast/ddqn_seed0_300
+ ```
 BDQN:
 
 ```bash
 python scripts/train.py --algo bdqn --episodes 500 --run-dir runs/bdqn
 ```
-
+```bash
+python scripts/train.py \
+  --algo ddqn \
+  --episodes 300 \
+  --device mps \
+  --train-every 4 \
+  --learning-starts 1000 \
+  --eval-every 50 \
+  --eval-episodes 10 \
+  --seed 0 \
+  --run-dir runs/fast/ddqn_seed0_300
+ ```
 ## Evaluate
 
 ```bash
