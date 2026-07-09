@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from tqdm import trange
+import time
 
 from uav_search_belief20.actions import ACTION_NAMES
 from uav_search_belief20.agents.bdqn_agent import BDQNAgent, BDQNConfig
@@ -143,12 +144,28 @@ def main() -> None:
     parser.add_argument("--blr-lambda", type=float, default=1.0)
     parser.add_argument("--blr-noise-var", type=float, default=1.0)
     parser.add_argument("--torch-threads", type=int, default=1)
+    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "mps", "cuda"])
+    parser.add_argument("--train-every", type=int, default=1)
+    parser.add_argument("--learning-starts", type=int, default=0)
+    parser.add_argument("--profile", action="store_true")
     args = parser.parse_args()
 
     torch.set_num_threads(max(1, args.torch_threads))
     seed_everything(args.seed)
-    device = pick_device()
+    if args.device == "auto":
+        device = pick_device()
+    else:
+        device = args.device
+
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA demandé avec --device cuda, mais torch.cuda.is_available() == False")
+
+    if device == "mps" and not torch.backends.mps.is_available():
+        raise RuntimeError("MPS demandé avec --device mps, mais torch.backends.mps.is_available() == False")
+
     print(f"Using device: {device}")
+    print(f"torch threads: {args.torch_threads}")
+    print(f"train_every: {args.train_every}, learning_starts: {args.learning_starts}")
 
     env = make_env(args)
     agent = make_agent(args, env, device)
@@ -173,6 +190,15 @@ def main() -> None:
     recent_completed = deque(maxlen=50)
     best_score = -1e18
     best_ep = 0
+    prof = {
+        "act": 0.0,
+        "env": 0.0,
+        "replay": 0.0,
+        "train": 0.0,
+        "eval": 0.0,
+        "save": 0.0,
+        "steps": 0,
+    }
 
     pbar = trange(args.episodes, desc=f"{args.algo.upper()} primitive")
     for ep in pbar:
@@ -182,16 +208,50 @@ def main() -> None:
         done = False
         ep_reward = 0.0
         while not done:
+            if args.profile:
+                t0 = time.perf_counter()
+
             if isinstance(agent, BDQNAgent):
                 action = agent.act(obs, use_sample=True, action_mask=env.action_mask())
             else:
                 action = agent.act(obs, explore=True, action_mask=env.action_mask())
+
+            if args.profile:
+                prof["act"] += time.perf_counter() - t0
+
+
+            if args.profile:
+                t0 = time.perf_counter()
+
             next_obs, reward, terminated, truncated, info = env.step(action)
+
+            if args.profile:
+                prof["env"] += time.perf_counter() - t0
+
             done = terminated or truncated
+
+
+            if args.profile:
+                t0 = time.perf_counter()
+
             agent.replay.add(obs, action, reward, next_obs, done)
-            agent.train_step()
+
+            if args.profile:
+                prof["replay"] += time.perf_counter() - t0
+
+
+            if args.profile:
+                t0 = time.perf_counter()
+
+            if prof["steps"] >= args.learning_starts and prof["steps"] % args.train_every == 0:
+                agent.train_step()
+
+            if args.profile:
+                prof["train"] += time.perf_counter() - t0
+
             obs = next_obs
             ep_reward += reward
+            prof["steps"] += 1
 
         recent_reward.append(ep_reward)
         recent_detected.append(info["detected"])
@@ -207,14 +267,30 @@ def main() -> None:
         pbar.set_postfix(postfix)
 
         if (ep + 1) % args.eval_every == 0 or (ep + 1) == args.episodes:
+            if args.profile:
+                t0 = time.perf_counter()
+
             metrics = evaluate(agent, args, episodes=args.eval_episodes)
+
+            if args.profile:
+                prof["eval"] += time.perf_counter() - t0
+
             score = metrics["eval_reward"] + 2.0 * metrics["eval_completed"] + metrics["eval_detected"]
+
+            if args.profile:
+                t0 = time.perf_counter()
+
             if score > best_score:
                 best_score = score
                 best_ep = ep + 1
                 agent.save(str(run_dir / "best.pt"))
                 print(f"\n[Best] episode={best_ep} score={best_score:.3f} metrics={metrics}")
+
             agent.save(str(run_dir / "latest.pt"))
+
+            if args.profile:
+                prof["save"] += time.perf_counter() - t0
+                
             with metrics_path.open("a", newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=[
                     "episode", "train_reward", "train_detected", "train_completed",
@@ -231,7 +307,21 @@ def main() -> None:
                     "best_score": best_score,
                 })
             print(f"\n[Eval {ep + 1}] {metrics}")
+            
+    if args.profile:
+        total = prof["act"] + prof["env"] + prof["replay"] + prof["train"] + prof["eval"] + prof["save"]
 
+        print("\n=== PROFILE ===")
+        print(f"steps: {prof['steps']}")
+        print(f"total_profiled_time: {total:.2f}s")
+
+        for key in ["act", "env", "replay", "train", "eval", "save"]:
+            pct = 100.0 * prof[key] / max(total, 1e-9)
+            ms_per_step = 1000.0 * prof[key] / max(prof["steps"], 1)
+            print(f"{key:>8}: {prof[key]:8.2f}s | {pct:6.2f}% | {ms_per_step:8.3f} ms/step")
+
+        if prof["steps"] > 0 and total > 0:
+            print(f"throughput: {prof['steps'] / total:.2f} profiled steps/s")
     print("Training complete.")
     print(f"Best checkpoint: {run_dir / 'best.pt'} at episode {best_ep}, score={best_score:.3f}")
 
