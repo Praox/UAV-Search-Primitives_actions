@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: uav-search-belief20
+Version: 0.1.0
+Summary: Primitive-action UAV search/track with belief maps, DQN/DDQN/BDQN baselines.
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.24
+Requires-Dist: torch>=2.0
+Requires-Dist: tqdm>=4.66

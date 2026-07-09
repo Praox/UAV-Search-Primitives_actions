@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uav-search-belief20"
+version = "0.1.0"
+description = "Primitive-action UAV search/track with belief maps, DQN/DDQN/BDQN baselines."
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "torch>=2.0",
+  "tqdm>=4.66",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
