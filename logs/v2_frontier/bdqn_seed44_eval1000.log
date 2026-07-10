@@ -1,11 +1,8 @@
-reward_mean: -0.4331499999999993
-reward_std: 3.1652116955268483
-detected_mean: 0.942
-completed_mean: 0.353
-detected_value_mean: 1.187
-completed_value_mean: 0.455
-sensor_coverage_ratio_mean: 0.2325399994291365
-stay_ratio: 0.01372
-boundary_hit_ratio: 0.005953333333333333
-revisit_ratio: 0.9933333333333333
-action_counts: {'right': 6198, 'down': 69862, 'up': 68415, 'left': 3467, 'stay': 2058}
+Traceback (most recent call last):
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 154, in <module>
+    main()
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 80, in main
+    env0 = make_env(args)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 20, in make_env
+    EnvConfig(
+TypeError: EnvConfig.__init__() got an unexpected keyword argument 'reward_version'
