@@ -1,14 +1,11 @@
-Traceback (most recent call last):
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 126, in <module>
-    main()
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 75, in main
-    agent.load(args.checkpoint)
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/uav_search_belief20/agents/dqn_agent.py", line 126, in load
-    ckpt = torch.load(path, map_location=self.device, weights_only=False)
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/serialization.py", line 1319, in load
-    with _open_file_like(f, "rb") as opened_file:
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/serialization.py", line 659, in _open_file_like
-    return _open_file(name_or_buffer, mode)
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/serialization.py", line 640, in __init__
-    super().__init__(open(name, mode))
-FileNotFoundError: [Errno 2] No such file or directory: 'runs/v2_frontier/ddqn_seed44_1000/best.pt'
+reward_mean: -2.208085
+reward_std: 3.383496838741686
+detected_mean: 1.128
+completed_mean: 0.321
+detected_value_mean: 1.416
+completed_value_mean: 0.398
+sensor_coverage_ratio_mean: 0.2787574996910989
+stay_ratio: 0.46218952591841633
+boundary_hit_ratio: 0.2251153856414908
+revisit_ratio: 0.9935103913774245
+action_counts: {'right': 21278, 'left': 21341, 'up': 15516, 'down': 22500, 'stay': 69297}

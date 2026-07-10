@@ -1,3 +1,6 @@
+Using device: cuda
+torch threads: 1
+train_every: 4, learning_starts: 1000
 
 [Best] episode=50 score=-0.828 metrics={'eval_reward': -2.9280000000000017, 'eval_detected': 1.3, 'eval_completed': 0.4, 'eval_detected_value': 1.6, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.22600000202655793, 'stay_ratio': 0.4226666666666667, 'boundary_hit_ratio': 0.36866666666666664, 'revisit_ratio': 1.0}
 
@@ -50,9 +53,6 @@
 [Eval 900] {'eval_reward': 0.45299999999999485, 'eval_detected': 1.9, 'eval_completed': 0.8, 'eval_detected_value': 2.3, 'eval_completed_value': 1.1, 'eval_sensor_coverage': 0.35024999678134916, 'stay_ratio': 0.19266666666666668, 'boundary_hit_ratio': 0.23066666666666666, 'revisit_ratio': 0.9933333333333333}
 
 [Eval 950] {'eval_reward': -0.590000000000007, 'eval_detected': 1.6, 'eval_completed': 0.6, 'eval_detected_value': 1.9, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.3259999960660934, 'stay_ratio': 0.32666666666666666, 'boundary_hit_ratio': 0.12866666666666668, 'revisit_ratio': 0.9933333333333333}
-
-DDQN primitive: 100%|██████████| 1000/1000 [04:41<00:00,  1.81it/s, reward=-0.78, det=1.36, comp=0.46, best=3.95, eps=0.05]
-DDQN primitive: 100%|██████████| 1000/1000 [04:41<00:00,  3.55it/s, reward=-0.78, det=1.36, comp=0.46, best=3.95, eps=0.05]
 
 [Eval 1000] {'eval_reward': -0.06299999999999484, 'eval_detected': 1.7, 'eval_completed': 0.4, 'eval_detected_value': 2.1, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.3172499999403954, 'stay_ratio': 0.5473333333333333, 'boundary_hit_ratio': 0.098, 'revisit_ratio': 0.9933333333333333}
 Training complete.
