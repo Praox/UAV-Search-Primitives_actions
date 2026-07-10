@@ -110,51 +110,7 @@ python scripts/train.py \
   --run-dir runs/fast/ddqn_seed0_300
  ```
 
- python scripts/train.py \
-  --algo ddqn \
-  --episodes 1000 \
-  --device cuda \
-  --train-every 4 \
-  --learning-starts 1000 \
-  --eval-every 50 \
-  --eval-episodes 10 \
-  --seed 42 \
-  --run-dir runs/fast/ddqn_seed42_1000
-
-  python scripts/train.py \
-  --algo ddqn \
-  --episodes 1000 \
-  --device cuda \
-  --train-every 4 \
-  --learning-starts 1000 \
-  --eval-every 50 \
-  --eval-episodes 10 \
-  --seed 43 \
-  --run-dir runs/fast/ddqn_seed43_1000
-
-  python scripts/train.py \
-  --algo ddqn \
-  --episodes 1000 \
-  --device cuda \
-  --train-every 4 \
-  --learning-starts 1000 \
-  --eval-every 50 \
-  --eval-episodes 10 \
-  --seed 44 \
-  --run-dir runs/fast/ddqn_seed44_1000
-
- python scripts/evaluate.py \
-  --algo ddqn \
-  --checkpoint runs/fast/ddqn_seed44_1000/best.pt
-  --episodes 1000 \
- python scripts/evaluate.py \
-  --algo ddqn \
-  --checkpoint runs/fast/ddqn_seed43_1000/best.pt
-  --episodes 1000 \
-   python scripts/evaluate.py \
-  --algo ddqn \
-  --checkpoint runs/fast/ddqn_seed42_1000/best.pt
-  --episodes 1000 \
+ 
 ## Evaluate
 
 ```bash
@@ -209,3 +165,8 @@ docs/
 3. 3 drones shared BDQN independent, no mixer
 4. QMIX-DDQN
 5. QMIX-BDQN
+
+Example launch code :
+```bash
+python run_reward_tests.py v2_frontier ddqn 43
+```
