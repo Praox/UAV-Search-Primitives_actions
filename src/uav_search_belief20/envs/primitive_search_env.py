@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Dict, Tuple
 
 import numpy as np
@@ -21,22 +21,25 @@ class EnvConfig:
     max_steps: int = 150
     seed: int | None = None
 
+    # Explicit label so logs/checkpoints cannot be confused with v1.
+    reward_version: str = "v2_frontier"
+
     # --- Base movement shaping ---
     step_penalty: float = -0.005
 
-    # Old position-based exploration signal.
-    # Keep it very small because sensor coverage is more important than standing on a new cell.
+    # Position-based shaping is kept tiny. The real exploration signal is sensor-based.
     new_cell_bonus: float = 0.002
     revisit_penalty: float = 0.0
 
-    # New sensor-based exploration signal.
+    # Frontier/sensor-based exploration signal.
+    # Reward = min(cap, bonus * number_of_newly_observed_sensor_cells)
     new_observed_cell_bonus: float = 0.015
     new_observed_cell_bonus_cap: float = 0.15
 
-    # Avoid degenerate wall-hitting policies.
+    # Avoid wall-hitting policies.
     boundary_penalty: float = -0.20
 
-    # Penalize staying only when it does not help tracking.
+    # Penalize STAY only when it did not advance target tracking.
     idle_stay_penalty: float = -0.03
 
     # --- Task rewards ---
@@ -50,11 +53,16 @@ class EnvConfig:
     complete_value2_bonus: float = 10.0
     all_targets_bonus: float = 5.0
 
+    def reward_dict(self) -> dict:
+        """Small helper used by train/evaluate to log exactly which reward was used."""
+        return asdict(self)
+
+
 class PrimitiveSearchEnv:
     """Single-UAV primitive-action search/track environment.
 
-    Hidden truth remains in the environment. The agent only receives the UAV memory.
-    The learned policy directly selects one of: stay, up, down, left, right.
+    Hidden truth remains in the environment. The agent only receives UAV memory.
+    The policy directly selects one of: stay, up, down, left, right.
     """
 
     action_dim = ACTION_DIM
@@ -102,12 +110,7 @@ class PrimitiveSearchEnv:
         return self._obs(), self._info()
 
     def action_mask(self) -> np.ndarray:
-        """All primitive actions are allowed; boundary hits receive a penalty.
-
-        Keeping all actions available is useful because the baseline can learn the cost of
-        trying to leave the map. If desired, this can be changed into a strict valid-action
-        mask later.
-        """
+        """All primitive actions are allowed; boundary hits receive a penalty."""
         return np.ones(self.action_dim, dtype=bool)
 
     def step(self, action: int):
@@ -115,6 +118,10 @@ class PrimitiveSearchEnv:
         self.t += 1
         self.last_action = int(action)
         self.last_reward_parts = {}
+        self.last_new_observed_cells = 0
+        self.last_tracking_progress = False
+        self.last_track_progress_target = None
+
         reward = self._add_part("step", self.cfg.step_penalty)
 
         dr, dc = MOVES[int(action)]
@@ -125,21 +132,19 @@ class PrimitiveSearchEnv:
             reward += self._add_part("boundary", self.cfg.boundary_penalty)
         self.drone_pos = clipped
 
+        # Tiny position-based signal. This is NOT the main exploration signal.
         pos = tuple(self.drone_pos)
         self.last_new_cell = bool(self.memory.visited[pos] < 0.5)
-
-        # Very small position-based shaping.
-        # The stronger exploration reward is now based on newly observed sensor cells.
         if self.last_new_cell:
             reward += self._add_part("new_cell", self.cfg.new_cell_bonus)
         else:
             reward += self._add_part("revisit", self.cfg.revisit_penalty)
 
+        # Main reward terms.
         reward += self._observe_and_update_memory()
         reward += self._auto_track_update_if_possible()
 
-        # Penalize stay only when it did not advance tracking.
-        # This avoids killing the useful "stay near target to complete track" behavior.
+        # Penalize stay only when it was not useful for tracking.
         if int(action) == STAY and not self.last_tracking_progress:
             reward += self._add_part("idle_stay", self.cfg.idle_stay_penalty)
 
@@ -166,10 +171,9 @@ class PrimitiveSearchEnv:
         reward = 0.0
         visible = self._cells_in_radius(self.drone_pos, self.cfg.sensor_radius)
 
-        # Reward true sensor exploration: how many cells become observed now?
+        # V2 key point: reward newly observed SENSOR cells, not only new drone positions.
         newly_observed = sum(1 for cell in visible if self.memory.visited[cell] < 0.5)
         self.last_new_observed_cells = int(newly_observed)
-
         if newly_observed > 0:
             exploration_bonus = min(
                 self.cfg.new_observed_cell_bonus_cap,
@@ -207,8 +211,6 @@ class PrimitiveSearchEnv:
         return float(reward)
 
     def _auto_track_update_if_possible(self) -> float:
-        self.last_track_progress_target = None
-        self.last_tracking_progress = False
         candidates = []
         for target_id, target in self.memory.known_targets.items():
             if target.completed:
@@ -227,8 +229,9 @@ class PrimitiveSearchEnv:
         )
         i = int(candidates[0])
         self.last_track_progress_target = i
-        self.track_progress[i] += 1
         self.last_tracking_progress = True
+        self.track_progress[i] += 1
+
         value = int(self.target_values[i])
         reward = self._add_part("track_progress", self._track_progress_reward(value))
 
@@ -264,6 +267,7 @@ class PrimitiveSearchEnv:
         completed_value = int((self.completed.astype(np.int64) * self.target_values).sum())
         detected_value = int((self.detected.astype(np.int64) * self.target_values).sum())
         return {
+            "reward_version": self.cfg.reward_version,
             "t": int(self.t),
             "drone_pos": self.drone_pos.copy(),
             "detected": int(self.detected.sum()),
@@ -279,6 +283,7 @@ class PrimitiveSearchEnv:
             "last_boundary_hit": bool(self.last_boundary_hit),
             "last_new_cell": bool(self.last_new_cell),
             "last_new_observed_cells": int(self.last_new_observed_cells),
+            "last_sensor_revisit": int(self.last_new_observed_cells) == 0,
             "last_track_progress_target": self.last_track_progress_target,
             "last_tracking_progress": bool(self.last_tracking_progress),
             "last_reward_parts": dict(self.last_reward_parts),

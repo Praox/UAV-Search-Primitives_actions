@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
+import time
 from collections import Counter, deque
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
 import torch
 from tqdm import trange
-import time
- 
+
 from uav_search_belief20.actions import ACTION_NAMES
 from uav_search_belief20.agents.bdqn_agent import BDQNAgent, BDQNConfig
 from uav_search_belief20.agents.dqn_agent import DQNAgent, DQNConfig
@@ -29,6 +31,7 @@ def make_env(args, seed_offset: int = 0) -> PrimitiveSearchEnv:
             track_required=args.track_required,
             max_steps=args.max_steps,
             seed=args.seed + seed_offset,
+            reward_version=args.reward_version,
         )
     )
 
@@ -75,7 +78,10 @@ def evaluate(agent, args, episodes: int = 20) -> dict:
     detected_value, completed_value = [], []
     action_counts = Counter()
     boundary_hits = 0
-    revisit_steps = 0
+    position_revisit_steps = 0
+    sensor_revisit_steps = 0
+    tracking_progress_steps = 0
+    new_observed_total = 0
     decisions = 0
 
     for ep in range(episodes):
@@ -92,9 +98,13 @@ def evaluate(agent, args, episodes: int = 20) -> dict:
             total += reward
             done = terminated or truncated
             obs = next_obs
+
             action_counts[ACTION_NAMES[action]] += 1
             boundary_hits += int(info["last_boundary_hit"])
-            revisit_steps += int(not info["last_new_cell"])
+            position_revisit_steps += int(not info["last_new_cell"])
+            sensor_revisit_steps += int(info.get("last_new_observed_cells", 0) == 0)
+            new_observed_total += int(info.get("last_new_observed_cells", 0))
+            tracking_progress_steps += int(info.get("last_tracking_progress", False))
             decisions += 1
 
         rewards.append(total)
@@ -113,7 +123,12 @@ def evaluate(agent, args, episodes: int = 20) -> dict:
         "eval_sensor_coverage": float(np.mean(coverage)),
         "stay_ratio": action_counts["stay"] / max(1, decisions),
         "boundary_hit_ratio": boundary_hits / max(1, decisions),
-        "revisit_ratio": revisit_steps / max(1, decisions),
+        # keep old metric for backward compatibility
+        "revisit_ratio": position_revisit_steps / max(1, decisions),
+        # V2 metric: this is the meaningful revisit metric for sensor-based exploration
+        "sensor_revisit_ratio": sensor_revisit_steps / max(1, decisions),
+        "new_observed_cells_per_step": new_observed_total / max(1, decisions),
+        "tracking_progress_ratio": tracking_progress_steps / max(1, decisions),
     }
 
 
@@ -129,8 +144,10 @@ def main() -> None:
     parser.add_argument("--track-radius", type=int, default=1)
     parser.add_argument("--track-required", type=int, default=3)
     parser.add_argument("--max-steps", type=int, default=150)
+    parser.add_argument("--reward-version", type=str, default="v2_frontier")
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--eval-episodes", type=int, default=10)
+    parser.add_argument("--save-every", type=int, default=100)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--run-dir", type=str, default="runs/debug")
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -152,106 +169,96 @@ def main() -> None:
 
     torch.set_num_threads(max(1, args.torch_threads))
     seed_everything(args.seed)
-    if args.device == "auto":
-        device = pick_device()
-    else:
-        device = args.device
-
+    device = pick_device() if args.device == "auto" else args.device
     if device == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA demandé avec --device cuda, mais torch.cuda.is_available() == False")
-
     if device == "mps" and not torch.backends.mps.is_available():
         raise RuntimeError("MPS demandé avec --device mps, mais torch.backends.mps.is_available() == False")
-
-    print(f"Using device: {device}")
-    print(f"torch threads: {args.torch_threads}")
-    print(f"train_every: {args.train_every}, learning_starts: {args.learning_starts}")
 
     env = make_env(args)
     agent = make_agent(args, env, device)
     run_dir = Path(args.run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    print(f"Using device: {device}")
+    print(f"torch threads: {args.torch_threads}")
+    print(f"train_every: {args.train_every}, learning_starts: {args.learning_starts}")
+    print(f"reward_version: {env.cfg.reward_version}")
+    print("reward_config:")
+    for k, v in env.cfg.reward_dict().items():
+        if "bonus" in k or "penalty" in k or "reward_version" in k:
+            print(f"  {k}: {v}")
+
+    run_config = {
+        "args": vars(args),
+        "device": device,
+        "env_config": env.cfg.reward_dict(),
+        "reward_version": env.cfg.reward_version,
+    }
+    with (run_dir / "run_config.json").open("w") as f:
+        json.dump(run_config, f, indent=2)
+
     metrics_path = run_dir / "metrics.csv"
+    fieldnames = [
+        "episode", "reward_version", "train_reward", "train_detected", "train_completed",
+        "eval_reward", "eval_detected", "eval_completed", "eval_detected_value",
+        "eval_completed_value", "eval_sensor_coverage", "stay_ratio", "boundary_hit_ratio",
+        "revisit_ratio", "sensor_revisit_ratio", "new_observed_cells_per_step",
+        "tracking_progress_ratio", "best_score",
+    ]
     with metrics_path.open("w", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=[
-                "episode", "train_reward", "train_detected", "train_completed",
-                "eval_reward", "eval_detected", "eval_completed", "eval_detected_value",
-                "eval_completed_value", "eval_sensor_coverage", "stay_ratio",
-                "boundary_hit_ratio", "revisit_ratio", "best_score",
-            ],
-        )
-        writer.writeheader()
+        csv.DictWriter(f, fieldnames=fieldnames).writeheader()
 
     recent_reward = deque(maxlen=50)
     recent_detected = deque(maxlen=50)
     recent_completed = deque(maxlen=50)
     best_score = -1e18
     best_ep = 0
-    prof = {
-        "act": 0.0,
-        "env": 0.0,
-        "replay": 0.0,
-        "train": 0.0,
-        "eval": 0.0,
-        "save": 0.0,
-        "steps": 0,
-    }
+    global_steps = 0
+    prof = {"act": 0.0, "env": 0.0, "replay": 0.0, "train": 0.0, "eval": 0.0, "save": 0.0, "steps": 0}
 
-    #pbar = trange(args.episodes, desc=f"{args.algo.upper()} primitive")
-    pbar = range(args.episodes)
+    pbar = trange(args.episodes, desc=f"{args.algo.upper()} {args.reward_version}")
     for ep in pbar:
         obs, info = env.reset()
         if isinstance(agent, BDQNAgent):
             agent.resample_policy()
         done = False
         ep_reward = 0.0
+
         while not done:
             if args.profile:
                 t0 = time.perf_counter()
-
             if isinstance(agent, BDQNAgent):
                 action = agent.act(obs, use_sample=True, action_mask=env.action_mask())
             else:
                 action = agent.act(obs, explore=True, action_mask=env.action_mask())
-
             if args.profile:
                 prof["act"] += time.perf_counter() - t0
 
-
             if args.profile:
                 t0 = time.perf_counter()
-
             next_obs, reward, terminated, truncated, info = env.step(action)
-
             if args.profile:
                 prof["env"] += time.perf_counter() - t0
 
             done = terminated or truncated
 
-
             if args.profile:
                 t0 = time.perf_counter()
-
             agent.replay.add(obs, action, reward, next_obs, done)
-
             if args.profile:
                 prof["replay"] += time.perf_counter() - t0
 
-
             if args.profile:
                 t0 = time.perf_counter()
-
-            if prof["steps"] >= args.learning_starts and prof["steps"] % args.train_every == 0:
+            if global_steps >= args.learning_starts and global_steps % args.train_every == 0:
                 agent.train_step()
-
             if args.profile:
                 prof["train"] += time.perf_counter() - t0
 
             obs = next_obs
             ep_reward += reward
+            global_steps += 1
             prof["steps"] += 1
 
         recent_reward.append(ep_reward)
@@ -265,42 +272,35 @@ def main() -> None:
         }
         if isinstance(agent, DQNAgent):
             postfix["eps"] = f"{agent.epsilon():.2f}"
-        #pbar.set_postfix(postfix)
+        pbar.set_postfix(postfix)
 
         if (ep + 1) % args.eval_every == 0 or (ep + 1) == args.episodes:
             if args.profile:
                 t0 = time.perf_counter()
-
             metrics = evaluate(agent, args, episodes=args.eval_episodes)
-
             if args.profile:
                 prof["eval"] += time.perf_counter() - t0
 
+            # Score used only for checkpoint selection. Real comparison should use evaluate.py.
             score = metrics["eval_reward"] + 2.0 * metrics["eval_completed"] + metrics["eval_detected"]
 
             if args.profile:
                 t0 = time.perf_counter()
-
             if score > best_score:
                 best_score = score
                 best_ep = ep + 1
                 agent.save(str(run_dir / "best.pt"))
                 print(f"\n[Best] episode={best_ep} score={best_score:.3f} metrics={metrics}")
-
-            agent.save(str(run_dir / "latest.pt"))
-
+            if (ep + 1) % args.save_every == 0 or (ep + 1) == args.episodes:
+                agent.save(str(run_dir / "latest.pt"))
             if args.profile:
                 prof["save"] += time.perf_counter() - t0
-                
+
             with metrics_path.open("a", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=[
-                    "episode", "train_reward", "train_detected", "train_completed",
-                    "eval_reward", "eval_detected", "eval_completed", "eval_detected_value",
-                    "eval_completed_value", "eval_sensor_coverage", "stay_ratio",
-                    "boundary_hit_ratio", "revisit_ratio", "best_score",
-                ])
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writerow({
                     "episode": ep + 1,
+                    "reward_version": env.cfg.reward_version,
                     "train_reward": ep_reward,
                     "train_detected": info["detected"],
                     "train_completed": info["completed"],
@@ -308,21 +308,19 @@ def main() -> None:
                     "best_score": best_score,
                 })
             print(f"\n[Eval {ep + 1}] {metrics}")
-            
-    if args.profile:
-        total = prof["act"] + prof["env"] + prof["replay"] + prof["train"] + prof["eval"] + prof["save"]
 
+    if args.profile:
+        total = sum(prof[k] for k in ["act", "env", "replay", "train", "eval", "save"])
         print("\n=== PROFILE ===")
         print(f"steps: {prof['steps']}")
         print(f"total_profiled_time: {total:.2f}s")
-
         for key in ["act", "env", "replay", "train", "eval", "save"]:
             pct = 100.0 * prof[key] / max(total, 1e-9)
             ms_per_step = 1000.0 * prof[key] / max(prof["steps"], 1)
             print(f"{key:>8}: {prof[key]:8.2f}s | {pct:6.2f}% | {ms_per_step:8.3f} ms/step")
-
         if prof["steps"] > 0 and total > 0:
             print(f"throughput: {prof['steps'] / total:.2f} profiled steps/s")
+
     print("Training complete.")
     print(f"Best checkpoint: {run_dir / 'best.pt'} at episode {best_ep}, score={best_score:.3f}")
 
