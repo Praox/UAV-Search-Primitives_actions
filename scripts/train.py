@@ -200,7 +200,8 @@ def main() -> None:
         "steps": 0,
     }
 
-    pbar = trange(args.episodes, desc=f"{args.algo.upper()} primitive")
+    #pbar = trange(args.episodes, desc=f"{args.algo.upper()} primitive")
+    pbar = range(args.episodes)
     for ep in pbar:
         obs, info = env.reset()
         if isinstance(agent, BDQNAgent):
@@ -264,7 +265,7 @@ def main() -> None:
         }
         if isinstance(agent, DQNAgent):
             postfix["eps"] = f"{agent.epsilon():.2f}"
-        pbar.set_postfix(postfix)
+        #pbar.set_postfix(postfix)
 
         if (ep + 1) % args.eval_every == 0 or (ep + 1) == args.episodes:
             if args.profile:

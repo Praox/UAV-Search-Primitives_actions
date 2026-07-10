@@ -1,0 +1,45 @@
+[Best] episode=50 score=-1.839 metrics={'eval_reward': -2.138999999999996, 'eval_detected': 0.3, 'eval_completed': 0.0, 'eval_detected_value': 0.3, 'eval_completed_value': 0.0, 'eval_sensor_coverage': 0.05474999994039535, 'stay_ratio': 0.9773333333333334, 'boundary_hit_ratio': 0.0, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 50] {'eval_reward': -2.138999999999996, 'eval_detected': 0.3, 'eval_completed': 0.0, 'eval_detected_value': 0.3, 'eval_completed_value': 0.0, 'eval_sensor_coverage': 0.05474999994039535, 'stay_ratio': 0.9773333333333334, 'boundary_hit_ratio': 0.0, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 100] {'eval_reward': -6.160000000000009, 'eval_detected': 0.6, 'eval_completed': 0.1, 'eval_detected_value': 0.7, 'eval_completed_value': 0.1, 'eval_sensor_coverage': 0.14574999939650296, 'stay_ratio': 0.28733333333333333, 'boundary_hit_ratio': 0.5853333333333334, 'revisit_ratio': 0.9933333333333333}
+
+[Best] episode=150 score=1.462 metrics={'eval_reward': -0.1380000000000016, 'eval_detected': 1.0, 'eval_completed': 0.3, 'eval_detected_value': 1.3, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.16799999978393315, 'stay_ratio': 0.8113333333333334, 'boundary_hit_ratio': 0.042, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 150] {'eval_reward': -0.1380000000000016, 'eval_detected': 1.0, 'eval_completed': 0.3, 'eval_detected_value': 1.3, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.16799999978393315, 'stay_ratio': 0.8113333333333334, 'boundary_hit_ratio': 0.042, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 200] {'eval_reward': -3.603500000000003, 'eval_detected': 1.2, 'eval_completed': 0.4, 'eval_detected_value': 1.3, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.19950000159442424, 'stay_ratio': 0.35, 'boundary_hit_ratio': 0.43666666666666665, 'revisit_ratio': 0.994}
+
+[Eval 250] {'eval_reward': -3.9700000000000046, 'eval_detected': 0.5, 'eval_completed': 0.2, 'eval_detected_value': 0.6, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.10125000085681676, 'stay_ratio': 0.6166666666666667, 'boundary_hit_ratio': 0.316, 'revisit_ratio': 0.996}
+
+[Eval 300] {'eval_reward': -4.209000000000007, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.0, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.17025000117719175, 'stay_ratio': 0.33, 'boundary_hit_ratio': 0.504, 'revisit_ratio': 0.9973333333333333}
+
+[Eval 350] {'eval_reward': -2.1575000000000024, 'eval_detected': 1.1, 'eval_completed': 0.2, 'eval_detected_value': 1.3, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.3067499980330467, 'stay_ratio': 0.4186666666666667, 'boundary_hit_ratio': 0.19266666666666668, 'revisit_ratio': 0.9953333333333333}
+
+[Eval 400] {'eval_reward': -1.7224999999999953, 'eval_detected': 0.5, 'eval_completed': 0.2, 'eval_detected_value': 0.6, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.08124999981373549, 'stay_ratio': 0.8646666666666667, 'boundary_hit_ratio': 0.09933333333333333, 'revisit_ratio': 0.998}
+
+[Eval 450] {'eval_reward': -1.6570000000000007, 'eval_detected': 0.9, 'eval_completed': 0.3, 'eval_detected_value': 1.1, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.22299999818205835, 'stay_ratio': 0.802, 'boundary_hit_ratio': 0.064, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 500] {'eval_reward': -3.940000000000005, 'eval_detected': 0.8, 'eval_completed': 0.3, 'eval_detected_value': 1.0, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.14525000080466272, 'stay_ratio': 0.41733333333333333, 'boundary_hit_ratio': 0.444, 'revisit_ratio': 0.9986666666666667}
+
+[Eval 550] {'eval_reward': -0.48550000000001087, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.2, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.15274999812245368, 'stay_ratio': 0.666, 'boundary_hit_ratio': 0.11, 'revisit_ratio': 0.994}
+
+[Eval 600] {'eval_reward': -2.316500000000001, 'eval_detected': 0.6, 'eval_completed': 0.2, 'eval_detected_value': 0.7, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.10449999980628491, 'stay_ratio': 0.824, 'boundary_hit_ratio': 0.09933333333333333, 'revisit_ratio': 0.998}
+
+[Eval 650] {'eval_reward': -2.580500000000003, 'eval_detected': 1.0, 'eval_completed': 0.5, 'eval_detected_value': 1.1, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.14000000059604645, 'stay_ratio': 0.502, 'boundary_hit_ratio': 0.31933333333333336, 'revisit_ratio': 0.994}
+
+[Eval 700] {'eval_reward': -2.3019999999999987, 'eval_detected': 0.7, 'eval_completed': 0.2, 'eval_detected_value': 0.9, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.12874999940395354, 'stay_ratio': 0.6773333333333333, 'boundary_hit_ratio': 0.19533333333333333, 'revisit_ratio': 0.9946666666666667}
+
+[Eval 750] {'eval_reward': -5.0670000000000055, 'eval_detected': 0.9, 'eval_completed': 0.2, 'eval_detected_value': 1.1, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.16050000134855508, 'stay_ratio': 0.31266666666666665, 'boundary_hit_ratio': 0.574, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 800] {'eval_reward': -1.9580000000000055, 'eval_detected': 1.5, 'eval_completed': 0.6, 'eval_detected_value': 1.8, 'eval_completed_value': 0.8, 'eval_sensor_coverage': 0.22250000070780515, 'stay_ratio': 0.2846666666666667, 'boundary_hit_ratio': 0.38666666666666666, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 850] {'eval_reward': -1.8570000000000029, 'eval_detected': 1.0, 'eval_completed': 0.3, 'eval_detected_value': 1.3, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.1707499995827675, 'stay_ratio': 0.6266666666666667, 'boundary_hit_ratio': 0.184, 'revisit_ratio': 0.9986666666666667}
+
+[Eval 900] {'eval_reward': -5.084000000000006, 'eval_detected': 1.5, 'eval_completed': 0.4, 'eval_detected_value': 1.7, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.24299999997019767, 'stay_ratio': 0.074, 'boundary_hit_ratio': 0.576, 'revisit_ratio': 0.9933333333333333}
+
+[Eval 950] {'eval_reward': -3.297999999999997, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.0, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.17650000005960464, 'stay_ratio': 0.2733333333333333, 'boundary_hit_ratio': 0.38133333333333336, 'revisit_ratio': 0.9973333333333333}
+
+[Eval 1000] {'eval_reward': -4.598000000000008, 'eval_detected': 0.8, 'eval_completed': 0.3, 'eval_detected_value': 0.9, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.1080000001937151, 'stay_ratio': 0.4046666666666667, 'boundary_hit_ratio': 0.44, 'revisit_ratio': 0.996}
+Training complete.
+Best checkpoint: runs/v2_frontier/bdqn_seed42_1000/best.pt at episode 150, score=1.462

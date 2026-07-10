@@ -1,0 +1,11 @@
+reward_mean: -1.9569649999999998
+reward_std: 3.4135097940060137
+detected_mean: 1.078
+completed_mean: 0.384
+detected_value_mean: 1.359
+completed_value_mean: 0.486
+sensor_coverage_ratio_mean: 0.27085499989241363
+stay_ratio: 0.44659333333333334
+boundary_hit_ratio: 0.22735333333333332
+revisit_ratio: 0.9937
+action_counts: {'up': 24486, 'right': 15411, 'left': 34935, 'stay': 66989, 'down': 8179}

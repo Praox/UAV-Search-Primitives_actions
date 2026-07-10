@@ -51,6 +51,7 @@ def main():
             ] + extra_args
 
             with open(train_log, "w") as f:
+            
                 subprocess.run(train_cmd, stdout=f, stderr=subprocess.STDOUT)
 
             print(f"=== EVAL {reward_version} {algo} seed {seed} ===")
