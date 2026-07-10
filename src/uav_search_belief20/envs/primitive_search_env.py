@@ -21,18 +21,34 @@ class EnvConfig:
     max_steps: int = 150
     seed: int | None = None
 
-    step_penalty: float = -0.01
-    new_cell_bonus: float = 0.01
-    revisit_penalty: float = -0.005
-    detect_value1_bonus: float = 0.30
-    detect_value2_bonus: float = 1.00
-    track_progress_value1_bonus: float = 0.03
-    track_progress_value2_bonus: float = 0.12
-    complete_value1_bonus: float = 2.0
-    complete_value2_bonus: float = 8.0
-    all_targets_bonus: float = 3.0
-    boundary_penalty: float = -0.05
+    # --- Base movement shaping ---
+    step_penalty: float = -0.005
 
+    # Old position-based exploration signal.
+    # Keep it very small because sensor coverage is more important than standing on a new cell.
+    new_cell_bonus: float = 0.002
+    revisit_penalty: float = 0.0
+
+    # New sensor-based exploration signal.
+    new_observed_cell_bonus: float = 0.015
+    new_observed_cell_bonus_cap: float = 0.15
+
+    # Avoid degenerate wall-hitting policies.
+    boundary_penalty: float = -0.20
+
+    # Penalize staying only when it does not help tracking.
+    idle_stay_penalty: float = -0.03
+
+    # --- Task rewards ---
+    detect_value1_bonus: float = 0.60
+    detect_value2_bonus: float = 1.50
+
+    track_progress_value1_bonus: float = 0.15
+    track_progress_value2_bonus: float = 0.45
+
+    complete_value1_bonus: float = 3.0
+    complete_value2_bonus: float = 10.0
+    all_targets_bonus: float = 5.0
 
 class PrimitiveSearchEnv:
     """Single-UAV primitive-action search/track environment.
@@ -79,7 +95,9 @@ class PrimitiveSearchEnv:
         self.last_action = STAY
         self.last_boundary_hit = False
         self.last_new_cell = False
+        self.last_new_observed_cells = 0
         self.last_track_progress_target: int | None = None
+        self.last_tracking_progress = False
         self.last_reward_parts: dict[str, float] = {}
         return self._obs(), self._info()
 
@@ -109,6 +127,9 @@ class PrimitiveSearchEnv:
 
         pos = tuple(self.drone_pos)
         self.last_new_cell = bool(self.memory.visited[pos] < 0.5)
+
+        # Very small position-based shaping.
+        # The stronger exploration reward is now based on newly observed sensor cells.
         if self.last_new_cell:
             reward += self._add_part("new_cell", self.cfg.new_cell_bonus)
         else:
@@ -116,6 +137,11 @@ class PrimitiveSearchEnv:
 
         reward += self._observe_and_update_memory()
         reward += self._auto_track_update_if_possible()
+
+        # Penalize stay only when it did not advance tracking.
+        # This avoids killing the useful "stay near target to complete track" behavior.
+        if int(action) == STAY and not self.last_tracking_progress:
+            reward += self._add_part("idle_stay", self.cfg.idle_stay_penalty)
 
         terminated = bool(np.all(self.completed))
         if terminated:
@@ -139,6 +165,18 @@ class PrimitiveSearchEnv:
     def _observe_and_update_memory(self) -> float:
         reward = 0.0
         visible = self._cells_in_radius(self.drone_pos, self.cfg.sensor_radius)
+
+        # Reward true sensor exploration: how many cells become observed now?
+        newly_observed = sum(1 for cell in visible if self.memory.visited[cell] < 0.5)
+        self.last_new_observed_cells = int(newly_observed)
+
+        if newly_observed > 0:
+            exploration_bonus = min(
+                self.cfg.new_observed_cell_bonus_cap,
+                self.cfg.new_observed_cell_bonus * float(newly_observed),
+            )
+            reward += self._add_part("new_observed", exploration_bonus)
+
         self.memory.mark_visited(visible)
         empty_cells: list[tuple[int, int]] = []
 
@@ -170,6 +208,7 @@ class PrimitiveSearchEnv:
 
     def _auto_track_update_if_possible(self) -> float:
         self.last_track_progress_target = None
+        self.last_tracking_progress = False
         candidates = []
         for target_id, target in self.memory.known_targets.items():
             if target.completed:
@@ -189,6 +228,7 @@ class PrimitiveSearchEnv:
         i = int(candidates[0])
         self.last_track_progress_target = i
         self.track_progress[i] += 1
+        self.last_tracking_progress = True
         value = int(self.target_values[i])
         reward = self._add_part("track_progress", self._track_progress_reward(value))
 
@@ -238,7 +278,9 @@ class PrimitiveSearchEnv:
             "last_action_name": ACTION_NAMES[int(self.last_action)],
             "last_boundary_hit": bool(self.last_boundary_hit),
             "last_new_cell": bool(self.last_new_cell),
+            "last_new_observed_cells": int(self.last_new_observed_cells),
             "last_track_progress_target": self.last_track_progress_target,
+            "last_tracking_progress": bool(self.last_tracking_progress),
             "last_reward_parts": dict(self.last_reward_parts),
             "completed_value": completed_value,
             "detected_value": detected_value,
