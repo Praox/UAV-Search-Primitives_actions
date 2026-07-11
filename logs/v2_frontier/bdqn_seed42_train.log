@@ -1,8 +1,9 @@
+Using device: cuda
+torch threads: 1
+train_every: 4, learning_starts: 1000
 Traceback (most recent call last):
   File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/train.py", line 329, in <module>
     main()
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/train.py", line 178, in main
-    env = make_env(args)
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/train.py", line 24, in make_env
-    EnvConfig(
-TypeError: EnvConfig.__init__() got an unexpected keyword argument 'reward_version'
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/train.py", line 186, in main
+    print(f"reward_version: {env.cfg.reward_version}")
+AttributeError: 'EnvConfig' object has no attribute 'reward_version'

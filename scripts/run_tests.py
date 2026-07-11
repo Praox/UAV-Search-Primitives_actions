@@ -9,7 +9,7 @@ def main():
     parser.add_argument("seed_arg", nargs="?", default="43")
     args = parser.parse_args()
 
-    reward_version = args.reward_version
+    #reward_version = args.reward_version
     algo_arg = args.algo_arg
     seed_arg = args.seed_arg
 
