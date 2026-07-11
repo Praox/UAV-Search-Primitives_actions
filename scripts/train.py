@@ -217,7 +217,8 @@ def main() -> None:
     global_steps = 0
     prof = {"act": 0.0, "env": 0.0, "replay": 0.0, "train": 0.0, "eval": 0.0, "save": 0.0, "steps": 0}
 
-    pbar = trange(args.episodes, desc=f"{args.algo.upper()} {args.reward_version}")
+    #pbar = trange(args.episodes, desc=f"{args.algo.upper()} {args.reward_version}")
+    pbar = range(args.episodes)
     for ep in pbar:
         obs, info = env.reset()
         if isinstance(agent, BDQNAgent):
@@ -264,6 +265,7 @@ def main() -> None:
         recent_reward.append(ep_reward)
         recent_detected.append(info["detected"])
         recent_completed.append(info["completed"])
+        """
         postfix = {
             "reward": f"{np.mean(recent_reward):.2f}",
             "det": f"{np.mean(recent_detected):.2f}",
@@ -273,6 +275,8 @@ def main() -> None:
         if isinstance(agent, DQNAgent):
             postfix["eps"] = f"{agent.epsilon():.2f}"
         pbar.set_postfix(postfix)
+
+"""
 
         if (ep + 1) % args.eval_every == 0 or (ep + 1) == args.episodes:
             if args.profile:

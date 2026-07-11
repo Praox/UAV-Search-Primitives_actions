@@ -1,0 +1,17 @@
+Using device: cuda
+reward_version: v2_frontier
+reward_version: v2_frontier
+reward_mean: -2.2784100000000005
+reward_std: 8.081109315675656
+detected_mean: 1.335
+completed_mean: 0.333
+detected_value_mean: 1.674
+completed_value_mean: 0.412
+sensor_coverage_ratio_mean: 0.33290000072494147
+stay_ratio: 0.15902666666666668
+boundary_hit_ratio: 0.19201333333333334
+revisit_ratio: 0.9935
+sensor_revisit_ratio: 0.7658733333333333
+new_observed_cells_per_step: 0.8810666666666667
+tracking_progress_ratio: 0.009846666666666667
+action_counts: {'right': 22107, 'down': 37405, 'up': 36132, 'stay': 23854, 'left': 30502}

@@ -66,7 +66,7 @@ def main():
                 "python", "scripts/train.py",
                 "--algo", algo,
                 "--episodes", "1000",
-                "--device", "mps",
+                "--device", "cuda",
                 "--reward-version", reward_version,
                 "--train-every", "4",
                 "--learning-starts", "1000",
@@ -86,7 +86,7 @@ def main():
                 "--checkpoint", f"{run_dir}/best.pt",
                 "--episodes", "1000",
                 "--reward-version", reward_version,
-                "--device", "mps",
+                "--device", "cuda",
                 "--json-out", f"logs/{reward_version}/{algo}_seed{seed}_eval1000.json",
             ]
 

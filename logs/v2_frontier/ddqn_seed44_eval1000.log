@@ -1,11 +1,17 @@
-reward_mean: -2.208085
-reward_std: 3.383496838741686
-detected_mean: 1.128
-completed_mean: 0.321
-detected_value_mean: 1.416
-completed_value_mean: 0.398
-sensor_coverage_ratio_mean: 0.2787574996910989
-stay_ratio: 0.46218952591841633
-boundary_hit_ratio: 0.2251153856414908
-revisit_ratio: 0.9935103913774245
-action_counts: {'right': 21278, 'left': 21341, 'up': 15516, 'down': 22500, 'stay': 69297}
+Using device: cuda
+reward_version: v2_frontier
+reward_version: v2_frontier
+reward_mean: -2.470755000000002
+reward_std: 7.844284348171917
+detected_mean: 1.46
+completed_mean: 0.418
+detected_value_mean: 1.817
+completed_value_mean: 0.519
+sensor_coverage_ratio_mean: 0.3583025002777576
+stay_ratio: 0.28311333333333333
+boundary_hit_ratio: 0.20337333333333332
+revisit_ratio: 0.9934333333333333
+sensor_revisit_ratio: 0.7547066666666666
+new_observed_cells_per_step: 0.9488066666666667
+tracking_progress_ratio: 0.011446666666666667
+action_counts: {'left': 14837, 'down': 32914, 'up': 41188, 'stay': 42467, 'right': 18594}
