@@ -66,7 +66,7 @@ def main():
                 "python", "scripts/train.py",
                 "--algo", algo,
                 "--episodes", "1000",
-                "--device", "cuda",
+                "--device", "mps",
                 "--reward-version", reward_version,
                 "--train-every", "4",
                 "--learning-starts", "1000",
