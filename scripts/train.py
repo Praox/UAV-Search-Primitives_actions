@@ -144,7 +144,7 @@ def main() -> None:
     parser.add_argument("--track-radius", type=int, default=1)
     parser.add_argument("--track-required", type=int, default=3)
     parser.add_argument("--max-steps", type=int, default=150)
-    parser.add_argument("--reward-version", type=str, default="v2_frontier")
+    parser.add_argument("--reward-version", type=str, default="v3_frontier")
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--eval-episodes", type=int, default=10)
     parser.add_argument("--save-every", type=int, default=100)
@@ -286,8 +286,14 @@ def main() -> None:
                 prof["eval"] += time.perf_counter() - t0
 
             # Score used only for checkpoint selection. Real comparison should use evaluate.py.
-            score = metrics["eval_reward"] + 2.0 * metrics["eval_completed"] + metrics["eval_detected"]
+            #score = metrics["eval_reward"] + 2.0 * metrics["eval_completed"] + metrics["eval_detected"]
 
+            score = (
+                metrics["eval_reward"]
+                + 3.0 * metrics["eval_completed"]
+                + 1.5 * metrics["eval_completed_value"]
+                + 0.5 * metrics["eval_detected"]
+            )
             if args.profile:
                 t0 = time.perf_counter()
             if score > best_score:
