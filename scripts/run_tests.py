@@ -25,7 +25,7 @@ def run_and_check(cmd, log_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("reward_version", nargs="?", default="v2_frontier")
+    parser.add_argument("reward_version", nargs="?", default="v3_frontier")
     parser.add_argument("algo_arg", nargs="?", default="ddqn")
     parser.add_argument("seed_arg", nargs="?", default="43")
     args = parser.parse_args()
@@ -33,8 +33,8 @@ def main():
     reward_version = args.reward_version
     algo_arg = args.algo_arg
     seed_arg = args.seed_arg
-
-    algos = ["dqn", "ddqn", "bdqn"]
+   #dqn works in the algos "dqn", 
+    algos = ["ddqn", "bdqn"]
     seeds = ["42", "43", "44"]
 
     if algo_arg != "all":

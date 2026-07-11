@@ -22,7 +22,7 @@ class EnvConfig:
     seed: int | None = None
 
     # Explicit label so logs/checkpoints cannot be confused with v1.
-    reward_version: str = "v2_frontier"
+    reward_version: str = "v3_frontier"
 
     # --- Base movement shaping ---
     step_penalty: float = -0.005
@@ -46,11 +46,11 @@ class EnvConfig:
     detect_value1_bonus: float = 0.60
     detect_value2_bonus: float = 1.50
 
-    track_progress_value1_bonus: float = 0.15
-    track_progress_value2_bonus: float = 0.45
+    track_progress_value1_bonus: float = 0.2
+    track_progress_value2_bonus: float = 0.6
 
-    complete_value1_bonus: float = 3.0
-    complete_value2_bonus: float = 10.0
+    complete_value1_bonus: float = 4.0
+    complete_value2_bonus: float = 12.0
     all_targets_bonus: float = 5.0
 
     def reward_dict(self) -> dict:

@@ -168,5 +168,5 @@ docs/
 
 Example launch code :
 ```bash
-python run_reward_tests.py v2_frontier ddqn 43
+python run_tests.py v2_frontier ddqn 43
 ```
