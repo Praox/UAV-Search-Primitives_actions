@@ -1,0 +1,23 @@
+{
+  "reward_version": "v2_frontier",
+  "reward_mean": -1.0364579999999985,
+  "reward_std": 7.233453288591552,
+  "detected_mean": 0.953,
+  "completed_mean": 0.298,
+  "detected_value_mean": 1.176,
+  "completed_value_mean": 0.36,
+  "sensor_coverage_ratio_mean": 0.23488250026479363,
+  "stay_ratio": 0.1499,
+  "boundary_hit_ratio": 0.11132,
+  "revisit_ratio": 0.9935266666666667,
+  "sensor_revisit_ratio": 0.8496733333333333,
+  "new_observed_cells_per_step": 0.6196866666666667,
+  "tracking_progress_ratio": 0.007973333333333334,
+  "action_counts": {
+    "down": 16621,
+    "right": 45746,
+    "left": 57887,
+    "stay": 22485,
+    "up": 7261
+  }
+}

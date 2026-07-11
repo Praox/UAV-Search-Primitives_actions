@@ -1,8 +1,17 @@
-Traceback (most recent call last):
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 154, in <module>
-    main()
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 80, in main
-    env0 = make_env(args)
-  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 20, in make_env
-    EnvConfig(
-TypeError: EnvConfig.__init__() got an unexpected keyword argument 'reward_version'
+Using device: cuda
+reward_version: v2_frontier
+reward_version: v2_frontier
+reward_mean: -0.5263840000000005
+reward_std: 5.964739612635576
+detected_mean: 1.15
+completed_mean: 0.325
+detected_value_mean: 1.429
+completed_value_mean: 0.403
+sensor_coverage_ratio_mean: 0.27670249961689114
+stay_ratio: 0.07345333333333333
+boundary_hit_ratio: 0.12766
+revisit_ratio: 0.9934133333333334
+sensor_revisit_ratio: 0.82158
+new_observed_cells_per_step: 0.7312066666666667
+tracking_progress_ratio: 0.009093333333333333
+action_counts: {'down': 21344, 'right': 52520, 'left': 56564, 'up': 8554, 'stay': 11018}

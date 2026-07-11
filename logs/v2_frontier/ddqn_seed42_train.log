@@ -1,57 +1,76 @@
 Using device: cuda
 torch threads: 1
 train_every: 4, learning_starts: 1000
+reward_version: v2_frontier
+reward_config:
+  reward_version: v2_frontier
+  step_penalty: -0.005
+  new_cell_bonus: 0.002
+  revisit_penalty: 0.0
+  new_observed_cell_bonus: 0.015
+  new_observed_cell_bonus_cap: 0.15
+  boundary_penalty: -0.2
+  idle_stay_penalty: -0.03
+  detect_value1_bonus: 0.6
+  detect_value2_bonus: 1.5
+  track_progress_value1_bonus: 0.15
+  track_progress_value2_bonus: 0.45
+  complete_value1_bonus: 3.0
+  complete_value2_bonus: 10.0
+  all_targets_bonus: 5.0
 
-[Best] episode=50 score=-1.094 metrics={'eval_reward': -2.7944999999999984, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.1, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.15099999941885472, 'stay_ratio': 0.6166666666666667, 'boundary_hit_ratio': 0.24133333333333334, 'revisit_ratio': 0.994}
+[Best] episode=50 score=-14.913 metrics={'eval_reward': -16.51349999999998, 'eval_detected': 1.0, 'eval_completed': 0.3, 'eval_detected_value': 1.2, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.24374999869614838, 'stay_ratio': 0.168, 'boundary_hit_ratio': 0.64, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.8406666666666667, 'new_observed_cells_per_step': 0.6433333333333333, 'tracking_progress_ratio': 0.01}
 
-[Eval 50] {'eval_reward': -2.7944999999999984, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.1, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.15099999941885472, 'stay_ratio': 0.6166666666666667, 'boundary_hit_ratio': 0.24133333333333334, 'revisit_ratio': 0.994}
+[Eval 50] {'eval_reward': -16.51349999999998, 'eval_detected': 1.0, 'eval_completed': 0.3, 'eval_detected_value': 1.2, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.24374999869614838, 'stay_ratio': 0.168, 'boundary_hit_ratio': 0.64, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.8406666666666667, 'new_observed_cells_per_step': 0.6433333333333333, 'tracking_progress_ratio': 0.01}
 
-[Eval 100] {'eval_reward': -4.076499999999999, 'eval_detected': 1.3, 'eval_completed': 0.5, 'eval_detected_value': 1.4, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.24800000339746475, 'stay_ratio': 0.29533333333333334, 'boundary_hit_ratio': 0.448, 'revisit_ratio': 0.994}
+[Best] episode=100 score=-9.438 metrics={'eval_reward': -11.337699999999987, 'eval_detected': 0.9, 'eval_completed': 0.5, 'eval_detected_value': 1.1, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.2427500020712614, 'stay_ratio': 0.314, 'boundary_hit_ratio': 0.46266666666666667, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.8433333333333334, 'new_observed_cells_per_step': 0.6406666666666667, 'tracking_progress_ratio': 0.012}
 
-[Best] episode=150 score=-0.544 metrics={'eval_reward': -2.2439999999999984, 'eval_detected': 1.1, 'eval_completed': 0.3, 'eval_detected_value': 1.3, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.15149999894201754, 'stay_ratio': 0.688, 'boundary_hit_ratio': 0.14866666666666667, 'revisit_ratio': 0.9933333333333333}
+[Eval 100] {'eval_reward': -11.337699999999987, 'eval_detected': 0.9, 'eval_completed': 0.5, 'eval_detected_value': 1.1, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.2427500020712614, 'stay_ratio': 0.314, 'boundary_hit_ratio': 0.46266666666666667, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.8433333333333334, 'new_observed_cells_per_step': 0.6406666666666667, 'tracking_progress_ratio': 0.012}
 
-[Eval 150] {'eval_reward': -2.2439999999999984, 'eval_detected': 1.1, 'eval_completed': 0.3, 'eval_detected_value': 1.3, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.15149999894201754, 'stay_ratio': 0.688, 'boundary_hit_ratio': 0.14866666666666667, 'revisit_ratio': 0.9933333333333333}
+[Best] episode=150 score=-5.739 metrics={'eval_reward': -7.438699999999995, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.1, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.2620000034570694, 'stay_ratio': 0.10066666666666667, 'boundary_hit_ratio': 0.36, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.8333333333333334, 'new_observed_cells_per_step': 0.692, 'tracking_progress_ratio': 0.011333333333333334}
 
-[Best] episode=200 score=-0.533 metrics={'eval_reward': -2.5329999999999986, 'eval_detected': 1.2, 'eval_completed': 0.4, 'eval_detected_value': 1.2, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.2202499970793724, 'stay_ratio': 0.5906666666666667, 'boundary_hit_ratio': 0.202, 'revisit_ratio': 0.9933333333333333}
+[Eval 150] {'eval_reward': -7.438699999999995, 'eval_detected': 0.9, 'eval_completed': 0.4, 'eval_detected_value': 1.1, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.2620000034570694, 'stay_ratio': 0.10066666666666667, 'boundary_hit_ratio': 0.36, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.8333333333333334, 'new_observed_cells_per_step': 0.692, 'tracking_progress_ratio': 0.011333333333333334}
 
-[Eval 200] {'eval_reward': -2.5329999999999986, 'eval_detected': 1.2, 'eval_completed': 0.4, 'eval_detected_value': 1.2, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.2202499970793724, 'stay_ratio': 0.5906666666666667, 'boundary_hit_ratio': 0.202, 'revisit_ratio': 0.9933333333333333}
+[Best] episode=200 score=-0.478 metrics={'eval_reward': -2.577699999999999, 'eval_detected': 1.3, 'eval_completed': 0.4, 'eval_detected_value': 1.6, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.30375000089406967, 'stay_ratio': 0.372, 'boundary_hit_ratio': 0.15, 'revisit_ratio': 0.9973333333333333, 'sensor_revisit_ratio': 0.808, 'new_observed_cells_per_step': 0.8033333333333333, 'tracking_progress_ratio': 0.010666666666666666}
 
-[Best] episode=250 score=-0.424 metrics={'eval_reward': -3.1240000000000014, 'eval_detected': 1.7, 'eval_completed': 0.5, 'eval_detected_value': 1.9, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.2764999970793724, 'stay_ratio': 0.21933333333333332, 'boundary_hit_ratio': 0.34933333333333333, 'revisit_ratio': 0.9933333333333333}
+[Eval 200] {'eval_reward': -2.577699999999999, 'eval_detected': 1.3, 'eval_completed': 0.4, 'eval_detected_value': 1.6, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.30375000089406967, 'stay_ratio': 0.372, 'boundary_hit_ratio': 0.15, 'revisit_ratio': 0.9973333333333333, 'sensor_revisit_ratio': 0.808, 'new_observed_cells_per_step': 0.8033333333333333, 'tracking_progress_ratio': 0.010666666666666666}
 
-[Eval 250] {'eval_reward': -3.1240000000000014, 'eval_detected': 1.7, 'eval_completed': 0.5, 'eval_detected_value': 1.9, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.2764999970793724, 'stay_ratio': 0.21933333333333332, 'boundary_hit_ratio': 0.34933333333333333, 'revisit_ratio': 0.9933333333333333}
+[Eval 250] {'eval_reward': -4.914999999999997, 'eval_detected': 1.8, 'eval_completed': 0.5, 'eval_detected_value': 2.3, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.3937499925494194, 'stay_ratio': 0.176, 'boundary_hit_ratio': 0.3546666666666667, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7226666666666667, 'new_observed_cells_per_step': 1.0433333333333332, 'tracking_progress_ratio': 0.013333333333333334}
 
-[Eval 300] {'eval_reward': -3.4529999999999994, 'eval_detected': 0.6, 'eval_completed': 0.1, 'eval_detected_value': 0.6, 'eval_completed_value': 0.1, 'eval_sensor_coverage': 0.17025000005960464, 'stay_ratio': 0.3, 'boundary_hit_ratio': 0.21466666666666667, 'revisit_ratio': 0.9933333333333333}
+[Best] episode=300 score=1.804 metrics={'eval_reward': -0.8957000000000056, 'eval_detected': 1.5, 'eval_completed': 0.6, 'eval_detected_value': 1.9, 'eval_completed_value': 0.8, 'eval_sensor_coverage': 0.3840000003576279, 'stay_ratio': 0.22533333333333333, 'boundary_hit_ratio': 0.214, 'revisit_ratio': 0.9973333333333333, 'sensor_revisit_ratio': 0.744, 'new_observed_cells_per_step': 1.0173333333333334, 'tracking_progress_ratio': 0.015333333333333332}
 
-[Eval 350] {'eval_reward': -2.697, 'eval_detected': 0.8, 'eval_completed': 0.2, 'eval_detected_value': 0.9, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.2545000024139881, 'stay_ratio': 0.32, 'boundary_hit_ratio': 0.16066666666666668, 'revisit_ratio': 0.9933333333333333}
+[Eval 300] {'eval_reward': -0.8957000000000056, 'eval_detected': 1.5, 'eval_completed': 0.6, 'eval_detected_value': 1.9, 'eval_completed_value': 0.8, 'eval_sensor_coverage': 0.3840000003576279, 'stay_ratio': 0.22533333333333333, 'boundary_hit_ratio': 0.214, 'revisit_ratio': 0.9973333333333333, 'sensor_revisit_ratio': 0.744, 'new_observed_cells_per_step': 1.0173333333333334, 'tracking_progress_ratio': 0.015333333333333332}
 
-[Eval 400] {'eval_reward': -2.9979999999999998, 'eval_detected': 0.7, 'eval_completed': 0.0, 'eval_detected_value': 0.8, 'eval_completed_value': 0.0, 'eval_sensor_coverage': 0.234749998152256, 'stay_ratio': 0.6126666666666667, 'boundary_hit_ratio': 0.13866666666666666, 'revisit_ratio': 0.996}
+[Eval 350] {'eval_reward': -1.278500000000006, 'eval_detected': 1.9, 'eval_completed': 0.3, 'eval_detected_value': 2.3, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.38024999797344206, 'stay_ratio': 0.224, 'boundary_hit_ratio': 0.17133333333333334, 'revisit_ratio': 0.9966666666666667, 'sensor_revisit_ratio': 0.7433333333333333, 'new_observed_cells_per_step': 1.0073333333333334, 'tracking_progress_ratio': 0.008}
 
-[Eval 450] {'eval_reward': -3.6879999999999953, 'eval_detected': 0.9, 'eval_completed': 0.2, 'eval_detected_value': 1.0, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.2647499985992908, 'stay_ratio': 0.36933333333333335, 'boundary_hit_ratio': 0.294, 'revisit_ratio': 0.996}
+[Eval 400] {'eval_reward': -1.5511999999999984, 'eval_detected': 1.7, 'eval_completed': 0.3, 'eval_detected_value': 1.8, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.35275000184774397, 'stay_ratio': 0.29933333333333334, 'boundary_hit_ratio': 0.12466666666666666, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.7626666666666667, 'new_observed_cells_per_step': 0.934, 'tracking_progress_ratio': 0.008666666666666666}
 
-[Eval 500] {'eval_reward': -2.582999999999999, 'eval_detected': 1.2, 'eval_completed': 0.2, 'eval_detected_value': 1.5, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.2804999977350235, 'stay_ratio': 0.5153333333333333, 'boundary_hit_ratio': 0.17933333333333334, 'revisit_ratio': 0.9946666666666667}
+[Eval 450] {'eval_reward': -1.4729000000000088, 'eval_detected': 1.4, 'eval_completed': 0.5, 'eval_detected_value': 1.6, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.30599999874830247, 'stay_ratio': 0.338, 'boundary_hit_ratio': 0.128, 'revisit_ratio': 0.9946666666666667, 'sensor_revisit_ratio': 0.7966666666666666, 'new_observed_cells_per_step': 0.8093333333333333, 'tracking_progress_ratio': 0.012666666666666666}
 
-[Eval 550] {'eval_reward': -3.1984999999999983, 'eval_detected': 1.4, 'eval_completed': 0.1, 'eval_detected_value': 1.8, 'eval_completed_value': 0.1, 'eval_sensor_coverage': 0.27574999928474425, 'stay_ratio': 0.346, 'boundary_hit_ratio': 0.25266666666666665, 'revisit_ratio': 0.994}
+[Best] episode=500 score=2.138 metrics={'eval_reward': -0.9621999999999973, 'eval_detected': 1.9, 'eval_completed': 0.6, 'eval_detected_value': 2.5, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.33875000178813935, 'stay_ratio': 0.22533333333333333, 'boundary_hit_ratio': 0.19466666666666665, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.7726666666666666, 'new_observed_cells_per_step': 0.8966666666666666, 'tracking_progress_ratio': 0.015333333333333332}
 
-[Eval 600] {'eval_reward': -2.790000000000002, 'eval_detected': 1.2, 'eval_completed': 0.1, 'eval_detected_value': 1.6, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.2610000014305115, 'stay_ratio': 0.36666666666666664, 'boundary_hit_ratio': 0.274, 'revisit_ratio': 0.9946666666666667}
+[Eval 500] {'eval_reward': -0.9621999999999973, 'eval_detected': 1.9, 'eval_completed': 0.6, 'eval_detected_value': 2.5, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.33875000178813935, 'stay_ratio': 0.22533333333333333, 'boundary_hit_ratio': 0.19466666666666665, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.7726666666666666, 'new_observed_cells_per_step': 0.8966666666666666, 'tracking_progress_ratio': 0.015333333333333332}
 
-[Eval 650] {'eval_reward': -4.545000000000008, 'eval_detected': 1.4, 'eval_completed': 0.3, 'eval_detected_value': 1.7, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.2885000005364418, 'stay_ratio': 0.15466666666666667, 'boundary_hit_ratio': 0.56, 'revisit_ratio': 0.9946666666666667}
+[Eval 550] {'eval_reward': -0.3652000000000144, 'eval_detected': 1.4, 'eval_completed': 0.5, 'eval_detected_value': 1.7, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.2987500011920929, 'stay_ratio': 0.228, 'boundary_hit_ratio': 0.13466666666666666, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.7913333333333333, 'new_observed_cells_per_step': 0.79, 'tracking_progress_ratio': 0.011333333333333334}
 
-[Eval 700] {'eval_reward': -2.7730000000000006, 'eval_detected': 1.4, 'eval_completed': 0.3, 'eval_detected_value': 1.9, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.31950000375509263, 'stay_ratio': 0.2633333333333333, 'boundary_hit_ratio': 0.342, 'revisit_ratio': 0.9946666666666667}
+[Eval 600] {'eval_reward': -3.7431999999999883, 'eval_detected': 1.8, 'eval_completed': 0.5, 'eval_detected_value': 2.2, 'eval_completed_value': 0.5, 'eval_sensor_coverage': 0.3645000010728836, 'stay_ratio': 0.318, 'boundary_hit_ratio': 0.23733333333333334, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.75, 'new_observed_cells_per_step': 0.9653333333333334, 'tracking_progress_ratio': 0.016666666666666666}
 
-[Best] episode=750 score=0.290 metrics={'eval_reward': -1.9100000000000026, 'eval_detected': 1.2, 'eval_completed': 0.5, 'eval_detected_value': 1.5, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.22524999976158142, 'stay_ratio': 0.38666666666666666, 'boundary_hit_ratio': 0.256, 'revisit_ratio': 0.9946666666666667}
+[Eval 650] {'eval_reward': -10.379199999999992, 'eval_detected': 1.5, 'eval_completed': 0.5, 'eval_detected_value': 1.8, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.3132499992847443, 'stay_ratio': 0.168, 'boundary_hit_ratio': 0.4826666666666667, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.79, 'new_observed_cells_per_step': 0.8286666666666667, 'tracking_progress_ratio': 0.012}
 
-[Eval 750] {'eval_reward': -1.9100000000000026, 'eval_detected': 1.2, 'eval_completed': 0.5, 'eval_detected_value': 1.5, 'eval_completed_value': 0.6, 'eval_sensor_coverage': 0.22524999976158142, 'stay_ratio': 0.38666666666666666, 'boundary_hit_ratio': 0.256, 'revisit_ratio': 0.9946666666666667}
+[Eval 700] {'eval_reward': -3.7507000000000064, 'eval_detected': 1.5, 'eval_completed': 0.6, 'eval_detected_value': 1.9, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.378499998152256, 'stay_ratio': 0.252, 'boundary_hit_ratio': 0.2786666666666667, 'revisit_ratio': 0.994, 'sensor_revisit_ratio': 0.7453333333333333, 'new_observed_cells_per_step': 1.0026666666666666, 'tracking_progress_ratio': 0.014666666666666666}
 
-[Eval 800] {'eval_reward': -3.0940000000000047, 'eval_detected': 1.5, 'eval_completed': 0.6, 'eval_detected_value': 2.0, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.23775000125169754, 'stay_ratio': 0.17133333333333334, 'boundary_hit_ratio': 0.476, 'revisit_ratio': 0.9946666666666667}
+[Eval 750] {'eval_reward': -1.9720000000000062, 'eval_detected': 1.7, 'eval_completed': 0.6, 'eval_detected_value': 2.3, 'eval_completed_value': 0.9, 'eval_sensor_coverage': 0.38025000095367434, 'stay_ratio': 0.298, 'boundary_hit_ratio': 0.276, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7406666666666667, 'new_observed_cells_per_step': 1.0073333333333334, 'tracking_progress_ratio': 0.016}
 
-[Eval 850] {'eval_reward': -3.4495000000000005, 'eval_detected': 1.4, 'eval_completed': 0.3, 'eval_detected_value': 1.6, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.2827499985694885, 'stay_ratio': 0.306, 'boundary_hit_ratio': 0.322, 'revisit_ratio': 0.994}
+[Eval 800] {'eval_reward': -6.994999999999995, 'eval_detected': 1.6, 'eval_completed': 0.2, 'eval_detected_value': 1.9, 'eval_completed_value': 0.2, 'eval_sensor_coverage': 0.39000000059604645, 'stay_ratio': 0.26466666666666666, 'boundary_hit_ratio': 0.31533333333333335, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7446666666666667, 'new_observed_cells_per_step': 1.0333333333333334, 'tracking_progress_ratio': 0.010666666666666666}
 
-[Best] episode=900 score=2.202 metrics={'eval_reward': -0.8975000000000012, 'eval_detected': 1.7, 'eval_completed': 0.7, 'eval_detected_value': 2.1, 'eval_completed_value': 0.9, 'eval_sensor_coverage': 0.26349999755620956, 'stay_ratio': 0.3273333333333333, 'boundary_hit_ratio': 0.2946666666666667, 'revisit_ratio': 0.994}
+[Eval 850] {'eval_reward': -6.685999999999998, 'eval_detected': 2.0, 'eval_completed': 0.3, 'eval_detected_value': 2.3, 'eval_completed_value': 0.3, 'eval_sensor_coverage': 0.3980000033974648, 'stay_ratio': 0.20333333333333334, 'boundary_hit_ratio': 0.3333333333333333, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7446666666666667, 'new_observed_cells_per_step': 1.0546666666666666, 'tracking_progress_ratio': 0.011333333333333334}
 
-[Eval 900] {'eval_reward': -0.8975000000000012, 'eval_detected': 1.7, 'eval_completed': 0.7, 'eval_detected_value': 2.1, 'eval_completed_value': 0.9, 'eval_sensor_coverage': 0.26349999755620956, 'stay_ratio': 0.3273333333333333, 'boundary_hit_ratio': 0.2946666666666667, 'revisit_ratio': 0.994}
+[Best] episode=900 score=4.661 metrics={'eval_reward': 0.6609999999999925, 'eval_detected': 2.2, 'eval_completed': 0.9, 'eval_detected_value': 2.7, 'eval_completed_value': 1.0, 'eval_sensor_coverage': 0.3709999963641167, 'stay_ratio': 0.3893333333333333, 'boundary_hit_ratio': 0.16266666666666665, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7453333333333333, 'new_observed_cells_per_step': 0.9826666666666667, 'tracking_progress_ratio': 0.023333333333333334}
 
-[Eval 950] {'eval_reward': -2.9809999999999985, 'eval_detected': 1.2, 'eval_completed': 0.3, 'eval_detected_value': 1.5, 'eval_completed_value': 0.4, 'eval_sensor_coverage': 0.210750000923872, 'stay_ratio': 0.39866666666666667, 'boundary_hit_ratio': 0.3446666666666667, 'revisit_ratio': 0.9946666666666667}
+[Eval 900] {'eval_reward': 0.6609999999999925, 'eval_detected': 2.2, 'eval_completed': 0.9, 'eval_detected_value': 2.7, 'eval_completed_value': 1.0, 'eval_sensor_coverage': 0.3709999963641167, 'stay_ratio': 0.3893333333333333, 'boundary_hit_ratio': 0.16266666666666665, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7453333333333333, 'new_observed_cells_per_step': 0.9826666666666667, 'tracking_progress_ratio': 0.023333333333333334}
 
-[Eval 1000] {'eval_reward': -0.8125000000000012, 'eval_detected': 1.1, 'eval_completed': 0.6, 'eval_detected_value': 1.3, 'eval_completed_value': 0.7, 'eval_sensor_coverage': 0.1767500028014183, 'stay_ratio': 0.6693333333333333, 'boundary_hit_ratio': 0.124, 'revisit_ratio': 0.994}
+[Eval 950] {'eval_reward': -1.7610000000000021, 'eval_detected': 1.5, 'eval_completed': 0.8, 'eval_detected_value': 1.6, 'eval_completed_value': 0.8, 'eval_sensor_coverage': 0.3192500039935112, 'stay_ratio': 0.4093333333333333, 'boundary_hit_ratio': 0.16266666666666665, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7926666666666666, 'new_observed_cells_per_step': 0.8446666666666667, 'tracking_progress_ratio': 0.018}
+
+[Eval 1000] {'eval_reward': -1.1724999999999905, 'eval_detected': 2.0, 'eval_completed': 0.8, 'eval_detected_value': 2.6, 'eval_completed_value': 1.1, 'eval_sensor_coverage': 0.36274999678134917, 'stay_ratio': 0.23466666666666666, 'boundary_hit_ratio': 0.284, 'revisit_ratio': 0.9933333333333333, 'sensor_revisit_ratio': 0.7566666666666667, 'new_observed_cells_per_step': 0.9606666666666667, 'tracking_progress_ratio': 0.019333333333333334}
 Training complete.
-Best checkpoint: runs/v2_frontier/ddqn_seed42_1000/best.pt at episode 900, score=2.202
+Best checkpoint: runs/v2_frontier/ddqn_seed42_1000/best.pt at episode 900, score=4.661
