@@ -170,3 +170,19 @@ Example launch code :
 ```bash
 python scripts/run_tests.py v2_frontier ddqn 43
 ```
+## Usecase multi-UAV:
+```bash
+python scripts/train_shared.py \
+  --algo all \
+  --seed all \
+  --episodes 1000 \
+  --final-eval-episodes 1000 \
+  --n-agents 3 \
+  --device cuda \
+  --reward-version v3_frontier \
+  --train-every 2 \
+  --learning-starts 1000 \
+  --posterior-update-period 500 \
+  --eval-every 50 \
+  --eval-episodes 10
+  ```
