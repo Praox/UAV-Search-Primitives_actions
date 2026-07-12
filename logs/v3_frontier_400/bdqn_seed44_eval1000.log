@@ -1,0 +1,30 @@
+Using device: cuda
+reward_version: v3_frontier_400
+Traceback (most recent call last):
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 154, in <module>
+    main()
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/scripts/evaluate.py", line 104, in main
+    action = agent.act(obs, use_sample=args.bdqn_sampled_eval, action_mask=env.action_mask())
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/src/uav_search_belief20/agents/bdqn_agent.py", line 130, in act
+    phi = self.feature_net(x).cpu().numpy()[0]
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/src/uav_search_belief20/models/networks.py", line 34, in forward
+    return self.mlp(self.conv(x))
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/container.py", line 250, in forward
+    input = module(input)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/kermit/Github/UAV-Search-Primitives_actions/.venv/lib/python3.10/site-packages/torch/nn/modules/linear.py", line 125, in forward
+    return F.linear(input, self.weight, self.bias)
+KeyboardInterrupt

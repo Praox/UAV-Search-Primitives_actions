@@ -143,7 +143,7 @@ def main() -> None:
     parser.add_argument("--detection-probability", type=float, default=1.0)
     parser.add_argument("--track-radius", type=int, default=1)
     parser.add_argument("--track-required", type=int, default=3)
-    parser.add_argument("--max-steps", type=int, default=150)
+    parser.add_argument("--max-steps", type=int, default=400)
     parser.add_argument("--reward-version", type=str, default="v3_frontier")
     parser.add_argument("--eval-every", type=int, default=100)
     parser.add_argument("--eval-episodes", type=int, default=10)
