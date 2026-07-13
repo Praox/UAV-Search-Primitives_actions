@@ -1,0 +1,28 @@
+{
+  "reward_version": "v3_frontier",
+  "setting": "shared_ddqn_3uav",
+  "algo": "ddqn",
+  "n_agents": 3,
+  "episodes": 1000,
+  "reward_mean": 2.9066069999999895,
+  "reward_std": 16.306099654072728,
+  "detected_mean": 2.706,
+  "completed_mean": 1.292,
+  "detected_value_mean": 3.387,
+  "completed_value_mean": 1.62,
+  "sensor_coverage_ratio_mean": 0.6669774990975856,
+  "stay_ratio": 0.062325481970367004,
+  "boundary_hit_ratio": 0.10110578186303981,
+  "collision_ratio": 0.11088324493313204,
+  "revisit_ratio": 0.9936293960729825,
+  "sensor_revisit_ratio": 0.8136559384004239,
+  "new_observed_cells_per_step": 0.5873848236672056,
+  "tracking_progress_ratio": 0.010719359421412888,
+  "action_counts": {
+    "right": 124333,
+    "up": 96278,
+    "left": 112981,
+    "down": 87512,
+    "stay": 27990
+  }
+}
