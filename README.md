@@ -190,7 +190,7 @@ python scripts/train_shared.py \
 
   ## Usecase Qmix:
 ```bash
-python scripts/train_qmix.py \
+python scripts/train_qmix.py \ 
   --algo all \
   --seed all \
   --episodes 1000 \
