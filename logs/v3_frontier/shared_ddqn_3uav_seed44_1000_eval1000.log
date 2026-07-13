@@ -1,0 +1,25 @@
+Using device: cuda
+algo: ddqn
+n_agents: 3
+checkpoint: runs/v3_frontier/shared_ddqn_3uav_seed44_1000/best.pt
+reward_version: v3_frontier
+reward_version: v3_frontier
+setting: shared_ddqn_3uav
+algo: ddqn
+n_agents: 3
+episodes: 1000
+reward_mean: 4.27038899999999
+reward_std: 12.507971093174097
+detected_mean: 2.445
+completed_mean: 1.119
+detected_value_mean: 3.072
+completed_value_mean: 1.403
+sensor_coverage_ratio_mean: 0.6195074998438358
+stay_ratio: 0.14445984337723144
+boundary_hit_ratio: 0.05521968028244767
+collision_ratio: 0.1004345177121203
+revisit_ratio: 0.9937020596630535
+sensor_revisit_ratio: 0.830122990606651
+new_observed_cells_per_step: 0.5463340497184673
+tracking_progress_ratio: 0.009254981777929536
+action_counts: {'up': 61583, 'down': 69843, 'left': 129269, 'right': 122658, 'stay': 64730}
