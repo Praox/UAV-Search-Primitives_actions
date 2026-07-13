@@ -70,10 +70,16 @@ def main():
                 "--reward-version", reward_version,
                 "--train-every", "4",
                 "--learning-starts", "1000",
+                "--posterior-update-period", "500",
+                "--posterior-replay-size", "8192 ",
+                "--posterior-chunk-size", "512",
+                "--posterior-min-samples", "1000",
+                "--posterior-mode", "rebuild",
                 "--eval-every", "50",
                 "--eval-episodes", "10",
                 "--seed", seed,
                 "--run-dir", run_dir,
+
             ] + extra_args
 
             run_and_check(train_cmd, train_log)
