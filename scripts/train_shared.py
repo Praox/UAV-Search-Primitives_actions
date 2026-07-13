@@ -73,6 +73,12 @@ def make_agent(args, env: MultiDronePrimitiveSearchEnv, algo: str, seed: int, de
                 epsilon_start=args.epsilon_start,
                 epsilon_end=args.epsilon_end,
                 epsilon_decay_steps=args.epsilon_decay_steps,
+                posterior_replay_size=args.posterior_replay_size,
+                posterior_chunk_size=args.posterior_chunk_size,
+                posterior_min_samples=args.posterior_min_samples,
+                posterior_mode=args.posterior_mode,
+                freeze_feature_after_steps=args.freeze_feature_after_steps,
+                posterior_jitter=args.posterior_jitter,
             )
         )
 
@@ -529,6 +535,37 @@ def main() -> None:
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--skip-final-eval", action="store_true")
 
+    
+    parser.add_argument(
+    "--posterior-replay-size",
+    type=int,
+    default=8192,
+    )
+    parser.add_argument(
+        "--posterior-chunk-size",
+        type=int,
+        default=512,
+    )
+    parser.add_argument(
+        "--posterior-min-samples",
+        type=int,
+        default=1000,
+    )
+    parser.add_argument(
+        "--posterior-mode",
+        choices=["rebuild", "cumulative"],
+        default="rebuild",
+    )
+    parser.add_argument(
+        "--freeze-feature-after-steps",
+        type=int,
+        default=None,
+    )
+    parser.add_argument(
+        "--posterior-jitter",
+        type=float,
+        default=1e-6,
+    )
     args = parser.parse_args()
 
     torch.set_num_threads(max(1, args.torch_threads))

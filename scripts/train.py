@@ -68,6 +68,12 @@ def make_agent(args, env: PrimitiveSearchEnv, device: str):
                 posterior_update_period=args.posterior_update_period,
                 blr_lambda=args.blr_lambda,
                 blr_noise_var=args.blr_noise_var,
+                posterior_replay_size=args.posterior_replay_size,
+                posterior_chunk_size=args.posterior_chunk_size,
+                posterior_min_samples=args.posterior_min_samples,
+                posterior_mode=args.posterior_mode,
+                freeze_feature_after_steps=args.freeze_feature_after_steps,
+                posterior_jitter=args.posterior_jitter,
             )
         )
     raise ValueError(f"Unknown algo: {args.algo}")
@@ -165,6 +171,36 @@ def main() -> None:
     parser.add_argument("--train-every", type=int, default=4)
     parser.add_argument("--learning-starts", type=int, default=1000)
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument(
+    "--posterior-replay-size",
+    type=int,
+    default=8192,
+    )
+    parser.add_argument(
+        "--posterior-chunk-size",
+        type=int,
+        default=512,
+    )
+    parser.add_argument(
+        "--posterior-min-samples",
+        type=int,
+        default=1000,
+    )
+    parser.add_argument(
+        "--posterior-mode",
+        choices=["rebuild", "cumulative"],
+        default="rebuild",
+    )
+    parser.add_argument(
+        "--freeze-feature-after-steps",
+        type=int,
+        default=None,
+    )
+    parser.add_argument(
+        "--posterior-jitter",
+        type=float,
+        default=1e-6,
+    )
     args = parser.parse_args()
 
     torch.set_num_threads(max(1, args.torch_threads))
