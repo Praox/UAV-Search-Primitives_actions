@@ -35,7 +35,8 @@ def main():
     seed_arg = args.seed_arg
    #dqn works in the algos "dqn", 
     algos = ["ddqn", "bdqn"]
-    seeds = ["42", "43", "44"]
+    #"42", "43", "44"
+    seeds = ["45", "46", "47","48"]
 
     if algo_arg != "all":
         if algo_arg not in algos:
