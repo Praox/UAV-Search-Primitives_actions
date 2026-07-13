@@ -186,3 +186,21 @@ python scripts/train_shared.py \
   --eval-every 50 \
   --eval-episodes 10
   ```
+
+
+  ## Usecase Qmix:
+```bash
+python scripts/train_qmix.py \
+  --algo all \
+  --seed all \
+  --episodes 1000 \
+  --final-eval-episodes 1000 \
+  --n-agents 3 \
+  --device cuda \
+  --reward-version v3_frontier \
+  --max-steps 150 \
+  --train-every 1 \
+  --learning-starts 1000 \
+  --eval-every 50 \
+  --eval-episodes 10
+  ```

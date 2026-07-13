@@ -1,0 +1,32 @@
+Using device: mps
+algo: qmix_ddqn
+n_agents: 3
+observation_shape: (7, 20, 20)
+global_state_dim: 8400
+train_every: 1, learning_starts: 1000
+reward_version: v3_frontier
+reward_config:
+  n_agents: 3
+  track_required: 3
+  reward_version: v3_frontier
+  step_penalty: -0.005
+  collision_penalty: -0.02
+  new_cell_bonus: 0.002
+  revisit_penalty: 0.0
+  new_observed_cell_bonus: 0.015
+  new_observed_cell_bonus_cap: 0.15
+  boundary_penalty: -0.2
+  idle_stay_penalty: -0.03
+  detect_value1_bonus: 0.6
+  detect_value2_bonus: 1.5
+  track_progress_value1_bonus: 0.2
+  track_progress_value2_bonus: 0.6
+  complete_value1_bonus: 4.0
+  complete_value2_bonus: 12.0
+  all_targets_bonus: 5.0
+
+[Best] episode=10 score=-74.228 metrics={'reward_version': 'v3_frontier', 'setting': 'qmix_ddqn_3uav', 'algo': 'qmix_ddqn', 'n_agents': 3, 'episodes': 5, 'reward_mean': -77.22379999999995, 'reward_std': 4.4667995880719396, 'detected_mean': 2.0, 'completed_mean': 0.6, 'detected_value_mean': 2.2, 'completed_value_mean': 0.6, 'sensor_coverage_ratio_mean': 0.4094999969005585, 'stay_ratio': 0.0, 'boundary_hit_ratio': 0.9093333333333333, 'collision_ratio': 0.0, 'revisit_ratio': 0.9942222222222222, 'sensor_revisit_ratio': 0.9137777777777778, 'new_observed_cells_per_step': 0.35733333333333334, 'tracking_progress_ratio': 0.0071111111111111115, 'action_counts': {'up': 2240, 'left': 9, 'down': 1}}
+
+[Eval 10] {'reward_version': 'v3_frontier', 'setting': 'qmix_ddqn_3uav', 'algo': 'qmix_ddqn', 'n_agents': 3, 'episodes': 5, 'reward_mean': -77.22379999999995, 'reward_std': 4.4667995880719396, 'detected_mean': 2.0, 'completed_mean': 0.6, 'detected_value_mean': 2.2, 'completed_value_mean': 0.6, 'sensor_coverage_ratio_mean': 0.4094999969005585, 'stay_ratio': 0.0, 'boundary_hit_ratio': 0.9093333333333333, 'collision_ratio': 0.0, 'revisit_ratio': 0.9942222222222222, 'sensor_revisit_ratio': 0.9137777777777778, 'new_observed_cells_per_step': 0.35733333333333334, 'tracking_progress_ratio': 0.0071111111111111115, 'action_counts': {'up': 2240, 'left': 9, 'down': 1}}
+Training complete.
+Best checkpoint: runs/v3_frontier/qmix_ddqn_3uav_seed42_10/best.pt at episode 10, score=-74.228
