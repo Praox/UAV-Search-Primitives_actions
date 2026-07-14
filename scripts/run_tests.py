@@ -35,7 +35,8 @@ def main():
     seed_arg = args.seed_arg
    #dqn works in the algos "dqn", 
     algos = ["ddqn", "bdqn"]
-    seeds = ["42", "43", "44"]
+    #"42", "43", "44"
+    seeds = ["45", "46", "47","48"]
 
     if algo_arg != "all":
         if algo_arg not in algos:
@@ -70,10 +71,16 @@ def main():
                 "--reward-version", reward_version,
                 "--train-every", "4",
                 "--learning-starts", "1000",
+                "--posterior-update-period", "500",
+                "--posterior-replay-size", "8192 ",
+                "--posterior-chunk-size", "512",
+                "--posterior-min-samples", "1000",
+                "--posterior-mode", "rebuild",
                 "--eval-every", "50",
                 "--eval-episodes", "10",
                 "--seed", seed,
                 "--run-dir", run_dir,
+
             ] + extra_args
 
             run_and_check(train_cmd, train_log)

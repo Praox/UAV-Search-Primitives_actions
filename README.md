@@ -204,7 +204,7 @@ python scripts/train_qmix.py \
   --eval-every 50 \
   --eval-episodes 10
   ```
-
+```bash
   python scripts/train.py \
   --algo bdqn \
   --episodes 1000 \
@@ -212,12 +212,15 @@ python scripts/train_qmix.py \
   --reward-version v3_frontier \
   --train-every 4 \
   --learning-starts 1000 \
+  
   --posterior-update-period 500 \
   --posterior-replay-size 8192 \
   --posterior-chunk-size 512 \
   --posterior-min-samples 1000 \
   --posterior-mode rebuild \
+
   --eval-every 50 \
   --eval-episodes 10 \
-  --seed 42 \
-  --run-dir runs/bdqn_corrected/seed42
+  --seed 43 \
+  --run-dir runs/bdqn_corrected/seed43
+  ```
