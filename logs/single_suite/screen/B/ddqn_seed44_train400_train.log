@@ -1,0 +1,34 @@
+Using device: mps
+algo: ddqn
+ablation: B — Tracking-progress map only.
+observation_shape: (7, 20, 20)
+train_every: 4, learning_starts: 1000
+environment_config:
+  grid_size: 20
+  n_value1_targets: 3
+  n_value2_targets: 1
+  sensor_radius: 2
+  detection_probability: 1.0
+  track_radius: 1
+  track_required: 3
+  max_steps: 150
+  seed: 44
+  reward_version: v3_frontier
+  ablation_name: B
+  use_boundary_action_mask: False
+  include_track_progress_map: True
+  step_penalty: -0.005
+  new_cell_bonus: 0.002
+  revisit_penalty: 0.0
+  new_observed_cell_bonus: 0.015
+  new_observed_cell_bonus_cap: 0.15
+  boundary_penalty: -0.2
+  idle_stay_penalty: -0.03
+  detect_value1_bonus: 0.6
+  detect_value2_bonus: 1.5
+  track_progress_value1_bonus: 0.2
+  track_progress_value2_bonus: 0.6
+  complete_value1_bonus: 4.0
+  complete_value2_bonus: 12.0
+  all_targets_bonus: 5.0
+DDQN B seed=44:   0%|          | 0/400 [00:00<?, ?it/s]DDQN B seed=44:   0%|          | 0/400 [00:00<?, ?it/s, completed=0.00, detected=2.00, reward=0.88]DDQN B seed=44:   0%|          | 0/400 [00:00<?, ?it/s, completed=0.00, detected=1.00, reward=-0.96]DDQN B seed=44:   0%|          | 2/400 [00:00<00:26, 14.80it/s, completed=0.00, detected=1.00, reward=-0.96]DDQN B seed=44:   0%|          | 2/400 [00:00<00:26, 14.80it/s, completed=0.00, detected=0.67, reward=-1.70]DDQN B seed=44:   0%|          | 2/400 [00:00<00:26, 14.80it/s, completed=0.25, detected=0.75, reward=-1.12]DDQN B seed=44:   0%|          | 2/400 [00:00<00:26, 14.80it/s, completed=0.40, detected=0.80, reward=-0.30]DDQN B seed=44:   0%|          | 2/400 [00:00<00:26, 14.80it/s, completed=0.33, detected=1.00, reward=-0.09]
