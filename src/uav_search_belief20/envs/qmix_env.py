@@ -1,0 +1,563 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from typing import Dict
+
+import numpy as np
+
+from uav_search_belief20.actions import ACTION_DIM, ACTION_NAMES, MOVES, STAY
+from uav_search_belief20.envs.drone_memory import DroneMemory
+
+
+@dataclass
+class MultiDroneEnvConfig:
+    """Configuration for the shared-memory multi-UAV primitive-action environment.
+
+    This file is aligned with the validated single-UAV reward v3_frontier:
+    - sensor/frontier exploration reward through newly observed cells,
+    - stronger tracking/completion rewards,
+    - anti-boundary and anti-idle-stay shaping.
+
+    The reward is a TEAM reward. In independent/shared training, every UAV transition
+    can receive this same team reward.
+    """
+
+    grid_size: int = 20
+    n_agents: int = 3
+    n_value1_targets: int = 3
+    n_value2_targets: int = 1
+    sensor_radius: int = 2
+    detection_probability: float = 1.0
+    track_radius: int = 1
+    track_required: int = 3
+    max_steps: int = 150
+    seed: int | None = None
+
+    # Explicit label so logs/checkpoints cannot be confused with single-agent v1/v2.
+    reward_version: str = "v3_frontier_clean"
+
+    # --- Base movement shaping ---
+    step_penalty: float = -0.005
+    # Slightly stronger than the old -0.02 because repeated cooperative stacking
+    # around a target should not be almost free.
+    collision_penalty: float = -0.10
+
+    # Tracking rule:
+    # - "one_per_target": recommended. A target can gain at most +1 progress per env step.
+    # - "per_agent": legacy behavior. Every UAV near a target increments progress.
+    tracking_update_mode: str = "one_per_target"
+
+    # Position-based shaping is kept tiny. The real exploration signal is sensor-based.
+    new_cell_bonus: float = 0.002
+    revisit_penalty: float = 0.0
+
+    # Frontier/sensor-based exploration signal.
+    # Reward = min(cap, bonus * number_of_newly_observed_sensor_cells)
+    new_observed_cell_bonus: float = 0.015
+    new_observed_cell_bonus_cap: float = 0.15
+
+    # Avoid degenerate wall-hitting and useless STAY policies.
+    boundary_penalty: float = -0.20
+    idle_stay_penalty: float = -0.03
+
+    # --- Task rewards, v3_frontier ---
+    detect_value1_bonus: float = 0.60
+    detect_value2_bonus: float = 1.50
+
+    track_progress_value1_bonus: float = 0.20
+    track_progress_value2_bonus: float = 0.60
+
+    complete_value1_bonus: float = 4.0
+    complete_value2_bonus: float = 12.0
+    all_targets_bonus: float = 5.0
+
+    def reward_dict(self) -> dict:
+        """Helper used by training/evaluation scripts to log the exact reward config."""
+        return asdict(self)
+
+
+class MultiDronePrimitiveSearchEnv:
+    """Shared-memory multi-UAV primitive-action search-and-track environment.
+
+    This environment is the baseline before QMIX:
+    - each UAV has its own local observation,
+    - UAVs use primitive actions: stay, up, down, left, right,
+    - all UAVs share one team memory/belief map,
+    - the environment returns a single TEAM reward,
+    - a future QMIX learner can use `global_state()`.
+
+    Observation shape for each UAV:
+        (7, grid_size, grid_size)
+
+    Observation channels:
+        0. own UAV position
+        1. other UAV positions
+        2. shared belief map
+        3. known target value map
+        4. completed target map
+        5. shared visited map
+        6. time remaining
+    """
+
+    action_dim = ACTION_DIM
+    action_names = ACTION_NAMES
+    observation_channels = 7
+
+    def __init__(self, config: MultiDroneEnvConfig | None = None):
+        self.cfg = config or MultiDroneEnvConfig()
+        self.rng = np.random.default_rng(self.cfg.seed)
+        self.observation_shape = (
+            self.observation_channels,
+            self.cfg.grid_size,
+            self.cfg.grid_size,
+        )
+        self.reset()
+
+    def reset(self):
+        g = self.cfg.grid_size
+        self.t = 0
+
+        self.target_values = np.array(
+            [1] * self.cfg.n_value1_targets + [2] * self.cfg.n_value2_targets,
+            dtype=np.int64,
+        )
+        n_targets = len(self.target_values)
+
+        forbidden: set[tuple[int, int]] = set()
+
+        drone_positions: list[tuple[int, int]] = []
+        while len(drone_positions) < self.cfg.n_agents:
+            p = (int(self.rng.integers(g)), int(self.rng.integers(g)))
+            if p not in forbidden:
+                drone_positions.append(p)
+                forbidden.add(p)
+        self.drone_pos = np.array(drone_positions, dtype=np.int64)
+
+        target_positions: list[tuple[int, int]] = []
+        while len(target_positions) < n_targets:
+            p = (int(self.rng.integers(g)), int(self.rng.integers(g)))
+            if p not in forbidden:
+                target_positions.append(p)
+                forbidden.add(p)
+        self.target_pos = np.array(target_positions, dtype=np.int64)
+
+        self.detected = np.zeros(n_targets, dtype=bool)
+        self.completed = np.zeros(n_targets, dtype=bool)
+        self.track_progress = np.zeros(n_targets, dtype=np.int64)
+
+        self.memory = DroneMemory(grid_size=g, n_targets=n_targets)
+        self.memory.mark_visited([tuple(p) for p in self.drone_pos])
+
+        self.last_actions = np.full((self.cfg.n_agents,), STAY, dtype=np.int64)
+        self.last_boundary_hits = np.zeros((self.cfg.n_agents,), dtype=bool)
+        self.last_new_cells = np.zeros((self.cfg.n_agents,), dtype=bool)
+        self.last_new_observed_cells = np.zeros((self.cfg.n_agents,), dtype=np.int64)
+        self.last_tracking_progress = np.zeros((self.cfg.n_agents,), dtype=bool)
+        self.last_track_progress_targets: list[int | None] = [
+            None for _ in range(self.cfg.n_agents)
+        ]
+        self.last_collision_count = 0
+        self.last_reward_parts: dict[str, float] = {}
+
+        return self._obs_all(), self._info()
+
+    def action_mask(self) -> np.ndarray:
+        """All primitive actions are allowed; bad actions are discouraged by penalties."""
+        return np.ones((self.cfg.n_agents, self.action_dim), dtype=bool)
+
+    def step(self, actions):
+        actions = np.asarray(actions, dtype=np.int64)
+        if actions.shape != (self.cfg.n_agents,):
+            raise ValueError(f"Expected actions shape {(self.cfg.n_agents,)}, got {actions.shape}.")
+
+        self.t += 1
+        self.last_actions = actions.copy()
+        self.last_boundary_hits[:] = False
+        self.last_new_cells[:] = False
+        self.last_new_observed_cells[:] = 0
+        self.last_tracking_progress[:] = False
+        self.last_track_progress_targets = [None for _ in range(self.cfg.n_agents)]
+        self.last_collision_count = 0
+        self.last_reward_parts = {}
+
+        reward = 0.0
+
+        # Move all UAVs first.
+        for i, action in enumerate(actions):
+            reward += self._add_part("step", self.cfg.step_penalty)
+
+            dr, dc = MOVES[int(action)]
+            new_pos = self.drone_pos[i] + np.array([dr, dc], dtype=np.int64)
+            clipped = np.clip(new_pos, 0, self.cfg.grid_size - 1)
+
+            if np.any(clipped != new_pos):
+                self.last_boundary_hits[i] = True
+                reward += self._add_part("boundary", self.cfg.boundary_penalty)
+
+            self.drone_pos[i] = clipped
+
+        # Same-cell collision penalty. We do not block movement.
+        # Count every extra UAV landing on an already occupied cell.
+        seen: set[tuple[int, int]] = set()
+        for p in map(tuple, self.drone_pos):
+            if p in seen:
+                self.last_collision_count += 1
+                reward += self._add_part("collision", self.cfg.collision_penalty)
+            seen.add(p)
+
+        # Observe from each UAV first. Sequential update is intentional for the
+        # exploration bonus: if UAV 0 observes a cell first, UAV 1 will not get
+        # a duplicate new-observed bonus for the exact same cell.
+        for i in range(self.cfg.n_agents):
+            pos = tuple(self.drone_pos[i])
+            self.last_new_cells[i] = bool(self.memory.visited[pos] < 0.5)
+
+            if self.last_new_cells[i]:
+                reward += self._add_part("new_cell", self.cfg.new_cell_bonus)
+            else:
+                reward += self._add_part("revisit", self.cfg.revisit_penalty)
+
+            reward += self._observe_from_agent(i)
+
+        # Track after all observations. In the default clean mode, each target
+        # can gain at most one tracking-progress increment per environment step.
+        if self.cfg.tracking_update_mode == "one_per_target":
+            reward += self._auto_track_all_agents_one_per_target()
+        elif self.cfg.tracking_update_mode == "per_agent":
+            for i in range(self.cfg.n_agents):
+                reward += self._auto_track_from_agent_legacy(i)
+        else:
+            raise ValueError(
+                "tracking_update_mode must be 'one_per_target' or 'per_agent'."
+            )
+
+        for i in range(self.cfg.n_agents):
+            if int(actions[i]) == STAY and not self.last_tracking_progress[i]:
+                reward += self._add_part("idle_stay", self.cfg.idle_stay_penalty)
+
+        terminated = bool(np.all(self.completed))
+        if terminated:
+            reward += self._add_part("all_targets", self.cfg.all_targets_bonus)
+
+        truncated = bool(self.t >= self.cfg.max_steps)
+        return self._obs_all(), float(reward), terminated, truncated, self._info()
+
+    def _add_part(self, key: str, value: float) -> float:
+        self.last_reward_parts[key] = self.last_reward_parts.get(key, 0.0) + float(value)
+        return float(value)
+
+    def _detect_reward(self, value: int) -> float:
+        return self.cfg.detect_value1_bonus if int(value) == 1 else self.cfg.detect_value2_bonus
+
+    def _track_progress_reward(self, value: int) -> float:
+        return self.cfg.track_progress_value1_bonus if int(value) == 1 else self.cfg.track_progress_value2_bonus
+
+    def _complete_reward(self, value: int) -> float:
+        return self.cfg.complete_value1_bonus if int(value) == 1 else self.cfg.complete_value2_bonus
+
+    def _observe_from_agent(self, agent_id: int) -> float:
+        reward = 0.0
+        visible = self._cells_in_radius(self.drone_pos[agent_id], self.cfg.sensor_radius)
+
+        newly_observed = sum(1 for cell in visible if self.memory.visited[cell] < 0.5)
+        self.last_new_observed_cells[agent_id] = int(newly_observed)
+
+        if newly_observed > 0:
+            exploration_bonus = min(
+                self.cfg.new_observed_cell_bonus_cap,
+                self.cfg.new_observed_cell_bonus * float(newly_observed),
+            )
+            reward += self._add_part("new_observed", exploration_bonus)
+
+        self.memory.mark_visited(visible)
+
+        empty_cells: list[tuple[int, int]] = []
+        for cell in visible:
+            target_ids_here = [
+                i for i, p in enumerate(self.target_pos)
+                if tuple(p) == cell and not self.completed[i]
+            ]
+
+            if not target_ids_here:
+                empty_cells.append(cell)
+                continue
+
+            for target_id in target_ids_here:
+                detected_now = self.rng.random() < self.cfg.detection_probability
+                if detected_now:
+                    if not self.detected[target_id]:
+                        self.detected[target_id] = True
+                        reward += self._add_part(
+                            "detect",
+                            self._detect_reward(int(self.target_values[target_id])),
+                        )
+                    self.memory.add_or_update_target(
+                        target_id=target_id,
+                        pos=cell,
+                        value=int(self.target_values[target_id]),
+                        step=self.t,
+                    )
+
+        self.memory.suppress_empty_cells(empty_cells, factor=0.2)
+        return float(reward)
+
+    def _apply_track_progress(self, target_id: int, agent_id: int) -> float:
+        """Apply exactly one unit of tracking progress to one target."""
+        target_id = int(target_id)
+        agent_id = int(agent_id)
+
+        self.last_track_progress_targets[agent_id] = target_id
+        self.last_tracking_progress[agent_id] = True
+        self.track_progress[target_id] += 1
+
+        value = int(self.target_values[target_id])
+        reward = self._add_part("track_progress", self._track_progress_reward(value))
+
+        if self.track_progress[target_id] >= self.cfg.track_required and not self.completed[target_id]:
+            self.completed[target_id] = True
+            reward += self._add_part("complete", self._complete_reward(value))
+
+        self.memory.update_target_progress(
+            target_id,
+            int(self.track_progress[target_id]),
+            bool(self.completed[target_id]),
+        )
+        return float(reward)
+
+    def _auto_track_all_agents_one_per_target(self) -> float:
+        """Clean cooperative tracking rule.
+
+        A target can be advanced at most once per environment step. This avoids
+        the old behavior where three UAVs stacked around the same target could
+        add +3 tracking progress in one step and immediately complete it.
+
+        Assignment rule:
+            1. Build all (agent, target) pairs within track_radius.
+            2. Sort by target value descending, distance ascending, current
+               target progress descending, then stable ids.
+            3. Assign greedily with both constraints:
+                   - max one assigned UAV per target;
+                   - max one assigned target per UAV.
+
+        This still allows simultaneous tracking of different targets in the
+        same global timestep, which is exactly what multi-UAV coordination
+        should exploit.
+        """
+        candidates: list[tuple[int, int, int, int, int]] = []
+
+        for agent_id in range(self.cfg.n_agents):
+            for target_id, target in self.memory.known_targets.items():
+                target_id = int(target_id)
+                if target.completed or self.completed[target_id]:
+                    continue
+                distance = self._dist(self.drone_pos[agent_id], target.pos)
+                if distance <= self.cfg.track_radius:
+                    value = int(self.target_values[target_id])
+                    progress = int(self.track_progress[target_id])
+                    candidates.append(
+                        (
+                            -value,
+                            distance,
+                            -progress,
+                            target_id,
+                            agent_id,
+                        )
+                    )
+
+        if not candidates:
+            return 0.0
+
+        candidates.sort()
+        used_targets: set[int] = set()
+        used_agents: set[int] = set()
+        reward = 0.0
+
+        for _, _, _, target_id, agent_id in candidates:
+            if target_id in used_targets or agent_id in used_agents:
+                continue
+            reward += self._apply_track_progress(target_id, agent_id)
+            used_targets.add(target_id)
+            used_agents.add(agent_id)
+
+        return float(reward)
+
+    def _auto_track_from_agent_legacy(self, agent_id: int) -> float:
+        """Legacy behavior: each UAV can increment one nearby target.
+
+        Keep this only for ablation/backward comparison with older logs.
+        """
+        candidates: list[int] = []
+
+        for target_id, target in self.memory.known_targets.items():
+            if target.completed:
+                continue
+            if self._dist(self.drone_pos[agent_id], target.pos) <= self.cfg.track_radius:
+                candidates.append(int(target_id))
+
+        if not candidates:
+            return 0.0
+
+        candidates.sort(
+            key=lambda i: (
+                -int(self.memory.known_targets[i].value),
+                self._dist(self.drone_pos[agent_id], self.memory.known_targets[i].pos),
+            )
+        )
+        return self._apply_track_progress(int(candidates[0]), int(agent_id))
+
+    def _obs_all(self) -> np.ndarray:
+        return np.stack(
+            [self._obs_agent(i) for i in range(self.cfg.n_agents)],
+            axis=0,
+        ).astype(np.float32)
+
+    def _obs_agent(self, agent_id: int) -> np.ndarray:
+        g = self.cfg.grid_size
+
+        own = np.zeros((g, g), dtype=np.float32)
+        own[tuple(self.drone_pos[agent_id])] = 1.0
+
+        others = np.zeros((g, g), dtype=np.float32)
+        for j, p in enumerate(self.drone_pos):
+            if j != agent_id:
+                others[tuple(p)] = 1.0
+
+        time_remaining = np.full(
+            (g, g),
+            1.0 - float(self.t) / float(self.cfg.max_steps),
+            dtype=np.float32,
+        )
+
+        return np.stack(
+            [
+                own,
+                others,
+                self.memory.belief,
+                self.memory.known_target_value_map(),
+                self.memory.completed_map,
+                self.memory.visited,
+                time_remaining,
+            ],
+            axis=0,
+        ).astype(np.float32)
+
+    def _tracking_progress_map(self) -> np.ndarray:
+        """Map with normalized progress at known target locations."""
+        g = self.cfg.grid_size
+        out = np.zeros((g, g), dtype=np.float32)
+        denom = max(1, int(self.cfg.track_required))
+        for target_id, target in self.memory.known_targets.items():
+            target_id = int(target_id)
+            r, c = target.pos
+            out[int(r), int(c)] = min(1.0, float(self.track_progress[target_id]) / float(denom))
+        return out
+
+    def global_state(self) -> np.ndarray:
+        """Compact centralized state for QMIX.
+
+        The old implementation returned self._obs_all().reshape(-1), which for
+        3 UAVs and observations of shape 7 x 20 x 20 produced 8400 values and
+        repeated the same shared maps once per UAV.
+
+        This state contains only one copy of the shared maps plus compact global
+        variables:
+            - normalized UAV positions;
+            - one belief map;
+            - one known-target-value map;
+            - one completed map;
+            - one visited map;
+            - one tracking-progress map;
+            - normalized target progress vector;
+            - detected/completed flags;
+            - time remaining.
+        """
+        g = self.cfg.grid_size
+        denom_pos = max(1, g - 1)
+        denom_track = max(1, int(self.cfg.track_required))
+
+        positions = (self.drone_pos.astype(np.float32) / float(denom_pos)).reshape(-1)
+        target_progress = np.asarray(self.track_progress, dtype=np.float32) / float(denom_track)
+        target_progress = np.clip(target_progress, 0.0, 1.0)
+        detected = self.detected.astype(np.float32)
+        completed = self.completed.astype(np.float32)
+        time_remaining = np.array(
+            [1.0 - float(self.t) / float(self.cfg.max_steps)],
+            dtype=np.float32,
+        )
+
+        maps = np.stack(
+            [
+                self.memory.belief.astype(np.float32),
+                self.memory.known_target_value_map().astype(np.float32),
+                self.memory.completed_map.astype(np.float32),
+                self.memory.visited.astype(np.float32),
+                self._tracking_progress_map().astype(np.float32),
+            ],
+            axis=0,
+        ).reshape(-1)
+
+        return np.concatenate(
+            [
+                positions,
+                target_progress,
+                detected,
+                completed,
+                time_remaining,
+                maps,
+            ],
+            axis=0,
+        ).astype(np.float32)
+
+    @property
+    def global_state_dim(self) -> int:
+        return int(self.global_state().shape[0])
+
+    def _info(self) -> Dict:
+        completed_value = int((self.completed.astype(np.int64) * self.target_values).sum())
+        detected_value = int((self.detected.astype(np.int64) * self.target_values).sum())
+
+        return {
+            "reward_version": self.cfg.reward_version,
+            "t": int(self.t),
+            "drone_pos": self.drone_pos.copy(),
+            "detected": int(self.detected.sum()),
+            "completed": int(self.completed.sum()),
+            "known_targets": len(self.memory.known_targets),
+            "known_uncompleted": sum(
+                1 for t in self.memory.known_targets.values() if not t.completed
+            ),
+            "visited_ratio": float(self.memory.visited.mean()),
+            "target_values": self.target_values.copy(),
+            "target_pos": self.target_pos.copy(),  # debug/evaluation only; not part of obs.
+            "track_progress": self.track_progress.copy(),
+            "last_actions": self.last_actions.copy(),
+            "last_action_names": [ACTION_NAMES[int(a)] for a in self.last_actions],
+            "last_boundary_hits": self.last_boundary_hits.copy(),
+            "last_new_cells": self.last_new_cells.copy(),
+            "last_new_observed_cells": self.last_new_observed_cells.copy(),
+            "last_sensor_revisits": self.last_new_observed_cells == 0,
+            "last_tracking_progress": self.last_tracking_progress.copy(),
+            "last_track_progress_targets": list(self.last_track_progress_targets),
+            "last_collision_count": int(self.last_collision_count),
+            "tracking_update_mode": self.cfg.tracking_update_mode,
+            "global_state_dim": self.global_state_dim,
+            "last_reward_parts": dict(self.last_reward_parts),
+            "completed_value": completed_value,
+            "detected_value": detected_value,
+        }
+
+    def _cells_in_radius(self, center: np.ndarray, radius: int) -> list[tuple[int, int]]:
+        g = self.cfg.grid_size
+        cr, cc = int(center[0]), int(center[1])
+        out: list[tuple[int, int]] = []
+
+        for r in range(max(0, cr - radius), min(g, cr + radius + 1)):
+            for c in range(max(0, cc - radius), min(g, cc + radius + 1)):
+                if abs(r - cr) + abs(c - cc) <= radius:
+                    out.append((r, c))
+
+        return out
+
+    @staticmethod
+    def _dist(a: np.ndarray, b: np.ndarray) -> int:
+        return int(abs(int(a[0]) - int(b[0])) + abs(int(a[1]) - int(b[1])))

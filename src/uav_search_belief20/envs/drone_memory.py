@@ -17,10 +17,10 @@ class KnownTarget:
 
 @dataclass
 class DroneMemory:
-    """What the UAV knows.
+    """What the UAV currently knows about the world.
 
-    Same spatial resolution as the hidden world, but this is not truth.
-    It is updated only through local sensing.
+    The memory has the same spatial resolution as the hidden world, but it is not
+    privileged truth. It is updated only through local sensing and tracking.
     """
 
     grid_size: int
@@ -79,17 +79,34 @@ class DroneMemory:
 
     def known_target_value_map(self) -> np.ndarray:
         out = np.zeros((self.grid_size, self.grid_size), dtype=np.float32)
-        for t in self.known_targets.values():
-            if not t.completed:
-                r, c = t.pos
-                out[int(r), int(c)] = float(t.value) / 2.0
+        for target in self.known_targets.values():
+            if not target.completed:
+                r, c = target.pos
+                out[int(r), int(c)] = float(target.value) / 2.0
+        return out
+
+    def track_progress_map(self, track_required: int) -> np.ndarray:
+        """Return the normalized progress of every known, unfinished target.
+
+        A value of 0.0 means no progress and 1.0 means the target has reached the
+        required tracking duration. Completed targets remain represented in the
+        dedicated completed map and are therefore omitted here.
+        """
+
+        denominator = max(1, int(track_required))
+        out = np.zeros((self.grid_size, self.grid_size), dtype=np.float32)
+        for target in self.known_targets.values():
+            if target.completed:
+                continue
+            r, c = target.pos
+            out[int(r), int(c)] = min(1.0, max(0.0, float(target.progress) / denominator))
         return out
 
     def normalize_belief(self) -> None:
         target_total = float(self.n_targets if self.belief_total is None else self.belief_total)
         self.belief = np.clip(self.belief, 1e-6, None)
-        s = float(self.belief.sum())
-        if s <= 1e-8:
+        total = float(self.belief.sum())
+        if total <= 1e-8:
             self.belief[:] = target_total / float(self.grid_size * self.grid_size)
         else:
-            self.belief *= target_total / s
+            self.belief *= target_total / total

@@ -9,6 +9,20 @@ from uav_search_belief20.actions import ACTION_DIM, ACTION_NAMES, MOVES, STAY
 from uav_search_belief20.envs.drone_memory import DroneMemory
 
 
+REWARD_PART_KEYS: tuple[str, ...] = (
+    "step",
+    "boundary",
+    "new_cell",
+    "revisit",
+    "new_observed",
+    "detect",
+    "track_progress",
+    "complete",
+    "idle_stay",
+    "all_targets",
+)
+
+
 @dataclass
 class EnvConfig:
     grid_size: int = 20
@@ -21,64 +35,65 @@ class EnvConfig:
     max_steps: int = 150
     seed: int | None = None
 
-    # Explicit label so logs/checkpoints cannot be confused with v1.
+    # Experiment metadata.
     reward_version: str = "v3_frontier"
+    ablation_name: str = "v3"
 
-    # --- Base movement shaping ---
+    # Observation/action switches used by the single-UAV ablation study.
+    use_boundary_action_mask: bool = False
+    include_track_progress_map: bool = False
+
+    # Base movement shaping.
     step_penalty: float = -0.005
-
-    # Position-based shaping is kept tiny. The real exploration signal is sensor-based.
     new_cell_bonus: float = 0.002
     revisit_penalty: float = 0.0
-
-    # Frontier/sensor-based exploration signal.
-    # Reward = min(cap, bonus * number_of_newly_observed_sensor_cells)
     new_observed_cell_bonus: float = 0.015
     new_observed_cell_bonus_cap: float = 0.15
-
-    # Avoid wall-hitting policies.
     boundary_penalty: float = -0.20
-
-    # Penalize STAY only when it did not advance target tracking.
     idle_stay_penalty: float = -0.03
 
-    # --- Task rewards ---
+    # Task rewards.
     detect_value1_bonus: float = 0.60
     detect_value2_bonus: float = 1.50
-
-    track_progress_value1_bonus: float = 0.2
-    track_progress_value2_bonus: float = 0.6
-
+    track_progress_value1_bonus: float = 0.20
+    track_progress_value2_bonus: float = 0.60
     complete_value1_bonus: float = 4.0
     complete_value2_bonus: float = 12.0
     all_targets_bonus: float = 5.0
 
     def reward_dict(self) -> dict:
-        """Small helper used by train/evaluate to log exactly which reward was used."""
         return asdict(self)
 
 
 class PrimitiveSearchEnv:
-    """Single-UAV primitive-action search/track environment.
+    """Single-UAV primitive-action search-and-track environment.
 
-    Hidden truth remains in the environment. The agent only receives UAV memory.
-    The policy directly selects one of: stay, up, down, left, right.
+    Hidden truth remains inside the environment. The policy receives only the
+    UAV's memory maps. Optional switches make the boundary mask and the tracking
+    progress channel independently ablatable without duplicating environments.
     """
 
     action_dim = ACTION_DIM
     action_names = ACTION_NAMES
-    observation_channels = 6
 
     def __init__(self, config: EnvConfig | None = None):
         self.cfg = config or EnvConfig()
         self.rng = np.random.default_rng(self.cfg.seed)
-        self.observation_shape = (self.observation_channels, self.cfg.grid_size, self.cfg.grid_size)
+        self.observation_channels = 7 if self.cfg.include_track_progress_map else 6
+        self.observation_shape = (
+            self.observation_channels,
+            self.cfg.grid_size,
+            self.cfg.grid_size,
+        )
         self.reset()
 
     def reset(self) -> Tuple[np.ndarray, Dict]:
-        g = self.cfg.grid_size
+        grid = self.cfg.grid_size
         self.t = 0
-        self.drone_pos = np.array([self.rng.integers(g), self.rng.integers(g)], dtype=np.int64)
+        self.drone_pos = np.array(
+            [self.rng.integers(grid), self.rng.integers(grid)],
+            dtype=np.int64,
+        )
         self.target_values = np.array(
             [1] * self.cfg.n_value1_targets + [2] * self.cfg.n_value2_targets,
             dtype=np.int64,
@@ -88,16 +103,19 @@ class PrimitiveSearchEnv:
         forbidden = {tuple(self.drone_pos)}
         positions: list[tuple[int, int]] = []
         while len(positions) < n_targets:
-            p = (int(self.rng.integers(g)), int(self.rng.integers(g)))
-            if p not in forbidden:
-                positions.append(p)
-                forbidden.add(p)
+            position = (
+                int(self.rng.integers(grid)),
+                int(self.rng.integers(grid)),
+            )
+            if position not in forbidden:
+                positions.append(position)
+                forbidden.add(position)
 
         self.target_pos = np.array(positions, dtype=np.int64)
         self.detected = np.zeros(n_targets, dtype=bool)
         self.completed = np.zeros(n_targets, dtype=bool)
         self.track_progress = np.zeros(n_targets, dtype=np.int64)
-        self.memory = DroneMemory(grid_size=g, n_targets=n_targets)
+        self.memory = DroneMemory(grid_size=grid, n_targets=n_targets)
         self.memory.mark_visited([tuple(self.drone_pos)])
 
         self.last_action = STAY
@@ -110,13 +128,35 @@ class PrimitiveSearchEnv:
         return self._obs(), self._info()
 
     def action_mask(self) -> np.ndarray:
-        """All primitive actions are allowed; boundary hits receive a penalty."""
-        return np.ones(self.action_dim, dtype=bool)
+        """Return valid primitive actions for the current UAV position.
+
+        In the historical v3 setup every action remains available. For the mask
+        ablations, movements that would leave the grid are excluded while STAY is
+        always valid.
+        """
+
+        mask = np.ones(self.action_dim, dtype=bool)
+        if not self.cfg.use_boundary_action_mask:
+            return mask
+
+        row, col = int(self.drone_pos[0]), int(self.drone_pos[1])
+        for action, (delta_row, delta_col) in MOVES.items():
+            next_row = row + int(delta_row)
+            next_col = col + int(delta_col)
+            mask[int(action)] = (
+                0 <= next_row < self.cfg.grid_size
+                and 0 <= next_col < self.cfg.grid_size
+            )
+        mask[STAY] = True
+        return mask
 
     def step(self, action: int):
-        assert 0 <= int(action) < self.action_dim
+        action = int(action)
+        if not 0 <= action < self.action_dim:
+            raise ValueError(f"Invalid action {action}.")
+
         self.t += 1
-        self.last_action = int(action)
+        self.last_action = action
         self.last_reward_parts = {}
         self.last_new_observed_cells = 0
         self.last_tracking_progress = False
@@ -124,28 +164,30 @@ class PrimitiveSearchEnv:
 
         reward = self._add_part("step", self.cfg.step_penalty)
 
-        dr, dc = MOVES[int(action)]
-        new_pos = self.drone_pos + np.array([dr, dc], dtype=np.int64)
-        clipped = np.clip(new_pos, 0, self.cfg.grid_size - 1)
-        self.last_boundary_hit = bool(np.any(clipped != new_pos))
+        delta_row, delta_col = MOVES[action]
+        new_position = self.drone_pos + np.array(
+            [delta_row, delta_col],
+            dtype=np.int64,
+        )
+        clipped = np.clip(new_position, 0, self.cfg.grid_size - 1)
+        self.last_boundary_hit = bool(np.any(clipped != new_position))
         if self.last_boundary_hit:
+            # Safety fallback. A correctly masked policy should never reach this
+            # branch, but keeping it makes environment failures visible.
             reward += self._add_part("boundary", self.cfg.boundary_penalty)
         self.drone_pos = clipped
 
-        # Tiny position-based signal. This is NOT the main exploration signal.
-        pos = tuple(self.drone_pos)
-        self.last_new_cell = bool(self.memory.visited[pos] < 0.5)
+        position = tuple(self.drone_pos)
+        self.last_new_cell = bool(self.memory.visited[position] < 0.5)
         if self.last_new_cell:
             reward += self._add_part("new_cell", self.cfg.new_cell_bonus)
         else:
             reward += self._add_part("revisit", self.cfg.revisit_penalty)
 
-        # Main reward terms.
         reward += self._observe_and_update_memory()
         reward += self._auto_track_update_if_possible()
 
-        # Penalize stay only when it was not useful for tracking.
-        if int(action) == STAY and not self.last_tracking_progress:
+        if action == STAY and not self.last_tracking_progress:
             reward += self._add_part("idle_stay", self.cfg.idle_stay_penalty)
 
         terminated = bool(np.all(self.completed))
@@ -159,20 +201,33 @@ class PrimitiveSearchEnv:
         return float(value)
 
     def _detect_reward(self, value: int) -> float:
-        return self.cfg.detect_value1_bonus if int(value) == 1 else self.cfg.detect_value2_bonus
+        return (
+            self.cfg.detect_value1_bonus
+            if int(value) == 1
+            else self.cfg.detect_value2_bonus
+        )
 
     def _track_progress_reward(self, value: int) -> float:
-        return self.cfg.track_progress_value1_bonus if int(value) == 1 else self.cfg.track_progress_value2_bonus
+        return (
+            self.cfg.track_progress_value1_bonus
+            if int(value) == 1
+            else self.cfg.track_progress_value2_bonus
+        )
 
     def _complete_reward(self, value: int) -> float:
-        return self.cfg.complete_value1_bonus if int(value) == 1 else self.cfg.complete_value2_bonus
+        return (
+            self.cfg.complete_value1_bonus
+            if int(value) == 1
+            else self.cfg.complete_value2_bonus
+        )
 
     def _observe_and_update_memory(self) -> float:
         reward = 0.0
         visible = self._cells_in_radius(self.drone_pos, self.cfg.sensor_radius)
 
-        # V2 key point: reward newly observed SENSOR cells, not only new drone positions.
-        newly_observed = sum(1 for cell in visible if self.memory.visited[cell] < 0.5)
+        newly_observed = sum(
+            1 for cell in visible if self.memory.visited[cell] < 0.5
+        )
         self.last_new_observed_cells = int(newly_observed)
         if newly_observed > 0:
             exploration_bonus = min(
@@ -186,32 +241,36 @@ class PrimitiveSearchEnv:
 
         for cell in visible:
             target_ids_here = [
-                i for i, p in enumerate(self.target_pos)
-                if tuple(p) == cell and not self.completed[i]
+                target_id
+                for target_id, target_position in enumerate(self.target_pos)
+                if tuple(target_position) == cell and not self.completed[target_id]
             ]
             if not target_ids_here:
                 empty_cells.append(cell)
                 continue
 
-            for i in target_ids_here:
+            for target_id in target_ids_here:
                 detected_now = self.rng.random() < self.cfg.detection_probability
-                if detected_now:
-                    if not self.detected[i]:
-                        self.detected[i] = True
-                        r = self._detect_reward(int(self.target_values[i]))
-                        reward += self._add_part("detect", r)
-                    self.memory.add_or_update_target(
-                        target_id=i,
-                        pos=cell,
-                        value=int(self.target_values[i]),
-                        step=self.t,
+                if not detected_now:
+                    continue
+                if not self.detected[target_id]:
+                    self.detected[target_id] = True
+                    reward += self._add_part(
+                        "detect",
+                        self._detect_reward(int(self.target_values[target_id])),
                     )
+                self.memory.add_or_update_target(
+                    target_id=target_id,
+                    pos=cell,
+                    value=int(self.target_values[target_id]),
+                    step=self.t,
+                )
 
         self.memory.suppress_empty_cells(empty_cells, factor=0.2)
         return float(reward)
 
     def _auto_track_update_if_possible(self) -> float:
-        candidates = []
+        candidates: list[int] = []
         for target_id, target in self.memory.known_targets.items():
             if target.completed:
                 continue
@@ -222,61 +281,91 @@ class PrimitiveSearchEnv:
             return 0.0
 
         candidates.sort(
-            key=lambda i: (
-                -int(self.memory.known_targets[i].value),
-                self._dist(self.drone_pos, self.memory.known_targets[i].pos),
+            key=lambda target_id: (
+                -int(self.memory.known_targets[target_id].value),
+                self._dist(
+                    self.drone_pos,
+                    self.memory.known_targets[target_id].pos,
+                ),
             )
         )
-        i = int(candidates[0])
-        self.last_track_progress_target = i
+        target_id = int(candidates[0])
+        self.last_track_progress_target = target_id
         self.last_tracking_progress = True
-        self.track_progress[i] += 1
+        self.track_progress[target_id] += 1
 
-        value = int(self.target_values[i])
-        reward = self._add_part("track_progress", self._track_progress_reward(value))
+        value = int(self.target_values[target_id])
+        reward = self._add_part(
+            "track_progress",
+            self._track_progress_reward(value),
+        )
 
-        if self.track_progress[i] >= self.cfg.track_required and not self.completed[i]:
-            self.completed[i] = True
+        if (
+            self.track_progress[target_id] >= self.cfg.track_required
+            and not self.completed[target_id]
+        ):
+            self.completed[target_id] = True
             reward += self._add_part("complete", self._complete_reward(value))
-        self.memory.update_target_progress(i, int(self.track_progress[i]), bool(self.completed[i]))
+
+        self.memory.update_target_progress(
+            target_id,
+            int(self.track_progress[target_id]),
+            bool(self.completed[target_id]),
+        )
         return float(reward)
 
     def _obs(self) -> np.ndarray:
-        g = self.cfg.grid_size
-        drone = np.zeros((g, g), dtype=np.float32)
+        grid = self.cfg.grid_size
+        drone = np.zeros((grid, grid), dtype=np.float32)
         drone[tuple(self.drone_pos)] = 1.0
         known_target_value = self.memory.known_target_value_map()
         time_remaining = np.full(
-            (g, g),
+            (grid, grid),
             1.0 - float(self.t) / float(self.cfg.max_steps),
             dtype=np.float32,
         )
-        return np.stack(
+
+        channels = [
+            drone,
+            self.memory.belief,
+            known_target_value,
+        ]
+        if self.cfg.include_track_progress_map:
+            channels.append(
+                self.memory.track_progress_map(self.cfg.track_required)
+            )
+        channels.extend(
             [
-                drone,
-                self.memory.belief,
-                known_target_value,
                 self.memory.completed_map,
                 self.memory.visited,
                 time_remaining,
-            ],
-            axis=0,
-        ).astype(np.float32)
+            ]
+        )
+        return np.stack(channels, axis=0).astype(np.float32)
 
     def _info(self) -> Dict:
-        completed_value = int((self.completed.astype(np.int64) * self.target_values).sum())
-        detected_value = int((self.detected.astype(np.int64) * self.target_values).sum())
+        completed_value = int(
+            (self.completed.astype(np.int64) * self.target_values).sum()
+        )
+        detected_value = int(
+            (self.detected.astype(np.int64) * self.target_values).sum()
+        )
         return {
             "reward_version": self.cfg.reward_version,
+            "ablation": self.cfg.ablation_name,
             "t": int(self.t),
             "drone_pos": self.drone_pos.copy(),
             "detected": int(self.detected.sum()),
             "completed": int(self.completed.sum()),
             "known_targets": len(self.memory.known_targets),
-            "known_uncompleted": sum(1 for t in self.memory.known_targets.values() if not t.completed),
+            "known_uncompleted": sum(
+                1 for target in self.memory.known_targets.values()
+                if not target.completed
+            ),
             "visited_ratio": float(self.memory.visited.mean()),
             "target_values": self.target_values.copy(),
-            "target_pos": self.target_pos.copy(),  # debug/evaluation only; not part of obs.
+            # Debug/evaluation only; never included in the policy observation.
+            "target_pos": self.target_pos.copy(),
             "track_progress": self.track_progress.copy(),
             "last_action": int(self.last_action),
             "last_action_name": ACTION_NAMES[int(self.last_action)],
@@ -291,16 +380,29 @@ class PrimitiveSearchEnv:
             "detected_value": detected_value,
         }
 
-    def _cells_in_radius(self, center: np.ndarray, radius: int) -> list[tuple[int, int]]:
-        g = self.cfg.grid_size
-        cr, cc = int(center[0]), int(center[1])
-        out: list[tuple[int, int]] = []
-        for r in range(max(0, cr - radius), min(g, cr + radius + 1)):
-            for c in range(max(0, cc - radius), min(g, cc + radius + 1)):
-                if abs(r - cr) + abs(c - cc) <= radius:
-                    out.append((r, c))
-        return out
+    def _cells_in_radius(
+        self,
+        center: np.ndarray,
+        radius: int,
+    ) -> list[tuple[int, int]]:
+        grid = self.cfg.grid_size
+        center_row, center_col = int(center[0]), int(center[1])
+        output: list[tuple[int, int]] = []
+        for row in range(
+            max(0, center_row - radius),
+            min(grid, center_row + radius + 1),
+        ):
+            for col in range(
+                max(0, center_col - radius),
+                min(grid, center_col + radius + 1),
+            ):
+                if abs(row - center_row) + abs(col - center_col) <= radius:
+                    output.append((row, col))
+        return output
 
     @staticmethod
-    def _dist(a: np.ndarray, b: np.ndarray) -> int:
-        return int(abs(int(a[0]) - int(b[0])) + abs(int(a[1]) - int(b[1])))
+    def _dist(first: np.ndarray, second: np.ndarray) -> int:
+        return int(
+            abs(int(first[0]) - int(second[0]))
+            + abs(int(first[1]) - int(second[1]))
+        )
