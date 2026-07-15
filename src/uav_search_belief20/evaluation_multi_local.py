@@ -21,6 +21,7 @@ def evaluate_multi_local_policy(
     env_factory: EnvFactory,
     episodes: int,
     eval_seed_base: int = 100_000,
+    episode_start_fn: Callable[[], None] | None = None,
 ) -> dict:
     rewards, detected, completed = [], [], []
     detected_value, completed_value = [], []
@@ -30,11 +31,14 @@ def evaluate_multi_local_policy(
     reward_parts = defaultdict(list)
     boundary_hits = collision_agents = local_sensor_revisits = 0
     local_new_observed = team_new_observed = tracking_progress = 0
+    simultaneous_sensor_overlap_sum = 0.0
     decisions = env_steps = 0
 
     for episode in range(int(episodes)):
         env = env_factory(int(eval_seed_base) + episode)
         obs_all, info = env.reset()
+        if episode_start_fn is not None:
+            episode_start_fn()
         done = False
         total_reward = 0.0
         episode_parts = {key: 0.0 for key in MULTI_REWARD_PART_KEYS}
@@ -59,6 +63,9 @@ def evaluate_multi_local_policy(
                 tracking_progress += int(info["last_tracking_progress"][agent_id])
                 decisions += 1
             team_new_observed += int(info["last_new_team_observed_cells"])
+            simultaneous_sensor_overlap_sum += float(
+                info.get("last_simultaneous_sensor_overlap_ratio", 0.0)
+            )
             if first_detection is None and info["detected"] > 0:
                 first_detection = int(info["t"])
             if first_completion is None and info["completed"] > 0:
@@ -110,6 +117,9 @@ def evaluate_multi_local_policy(
         "local_new_observed_cells_per_decision": local_new_observed / max(1, decisions),
         "team_new_observed_cells_per_env_step": team_new_observed / max(1, env_steps),
         "tracking_progress_ratio": tracking_progress / max(1, decisions),
+        "simultaneous_sensor_overlap_ratio_mean": (
+            simultaneous_sensor_overlap_sum / max(1, env_steps)
+        ),
         "action_counts": dict(action_counts),
         "eval_seed_base": int(eval_seed_base),
     }

@@ -16,8 +16,13 @@ from uav_search_belief20.envs.multi_drone_local_env import (
     MultiDroneLocalMemoryEnv,
 )
 from uav_search_belief20.evaluation_multi_local import evaluate_multi_local_policy
+from uav_search_belief20.marl.bayesian_qmix_agent import (
+    BayesianLocalQMIXAgent,
+    BayesianLocalQMIXConfig,
+)
 from uav_search_belief20.marl.qmix_local_agent import LocalQMIXAgent, LocalQMIXConfig
 from uav_search_belief20.utils import pick_device, seed_everything
+
 
 ALIASES = {
     "shared_ddqn": "shared_ddqn",
@@ -26,7 +31,13 @@ ALIASES = {
     "bdqn": "shared_bdqn",
     "qmix_ddqn": "qmix_ddqn",
     "qmix": "qmix_ddqn",
+    "bayes_qmix_shared": "bayes_qmix_shared",
+    "bayes_qmix_independent": "bayes_qmix_independent",
+    "bqmix_shared": "bayes_qmix_shared",
+    "bqmix_independent": "bayes_qmix_independent",
 }
+BAYES_QMIX_ALGOS = {"bayes_qmix_shared", "bayes_qmix_independent"}
+JOINT_ALGOS = {"qmix_ddqn", *BAYES_QMIX_ALGOS}
 
 
 def normalize_algo(name: str) -> str:
@@ -53,6 +64,7 @@ def make_env(args, seed: int) -> MultiDroneLocalMemoryEnv:
             reward_version=args.reward_version,
             include_agent_id_map=args.include_agent_id_map,
             collision_penalty=args.collision_penalty,
+            global_state_mode=args.global_state_mode,
         )
     )
 
@@ -126,12 +138,61 @@ def make_learner(args, env: MultiDroneLocalMemoryEnv, algo: str, seed: int):
                 seed=int(seed),
             )
         )
+    if algo in BAYES_QMIX_ALGOS:
+        posterior_sampling = (
+            "shared" if algo == "bayes_qmix_shared" else "independent"
+        )
+        return BayesianLocalQMIXAgent(
+            BayesianLocalQMIXConfig(
+                obs_shape=env.observation_shape,
+                state_dim=env.state_dim,
+                n_agents=env.cfg.n_agents,
+                action_dim=env.action_dim,
+                feature_dim=args.feature_dim,
+                mixing_embed_dim=args.mixing_embed_dim,
+                mixing_hypernet_embed=args.mixing_hypernet_embed,
+                gamma=args.gamma,
+                lr=args.lr,
+                batch_size=args.batch_size,
+                replay_capacity=args.replay_capacity,
+                target_update_period=args.target_update_period,
+                grad_clip_norm=args.grad_clip_norm,
+                posterior_sampling=posterior_sampling,
+                prior_std=args.bayes_prior_std,
+                initial_posterior_std=args.bayes_initial_std,
+                min_posterior_std=args.bayes_min_std,
+                max_posterior_std=args.bayes_max_std,
+                kl_weight=args.bayes_kl_weight,
+                epsilon_start=args.bayes_epsilon_start,
+                epsilon_end=args.bayes_epsilon_end,
+                epsilon_decay_steps=args.epsilon_decay_steps,
+                uncertainty_mc_samples=args.bayes_uncertainty_mc_samples,
+                device=args.resolved_device,
+                seed=int(seed),
+            )
+        )
     raise AssertionError(algo)
 
 
-def decentralized_actions(learner, algo: str, obs_all, masks, train: bool):
+def decentralized_actions(
+    learner,
+    algo: str,
+    obs_all: np.ndarray,
+    masks: np.ndarray,
+    *,
+    train: bool,
+    bayes_use_sample: bool | None = None,
+) -> np.ndarray:
     if algo == "qmix_ddqn":
         return learner.act(obs_all, action_masks=masks, explore=train)
+    if algo in BAYES_QMIX_ALGOS:
+        use_sample = train if bayes_use_sample is None else bool(bayes_use_sample)
+        return learner.act(
+            obs_all,
+            action_masks=masks,
+            use_sample=use_sample,
+            explore=train,
+        )
     if algo == "shared_bdqn":
         return np.asarray(
             [
@@ -149,12 +210,6 @@ def decentralized_actions(learner, algo: str, obs_all, masks, train: bool):
     )
 
 
-def evaluation_policy(learner, algo: str):
-    return lambda obs_all, masks: decentralized_actions(
-        learner, algo, obs_all, masks, train=False
-    )
-
-
 def checkpoint_score(metrics: dict) -> float:
     return float(
         metrics["reward_mean"]
@@ -167,21 +222,70 @@ def checkpoint_score(metrics: dict) -> float:
     )
 
 
-def evaluate(learner, args, algo: str, episodes: int) -> dict:
+def _common_metadata(learner, args, algo: str) -> dict:
+    metadata = {
+        "algo": algo,
+        "seed": int(args.seed),
+        "n_agents": int(args.n_agents),
+        "reward_version": args.reward_version,
+        "scenario_label": args.scenario_label,
+        "detection_probability": float(args.detection_probability),
+        "global_state_mode": args.global_state_mode,
+    }
+    if algo in BAYES_QMIX_ALGOS:
+        metadata.update(
+            {
+                "posterior_sampling": learner.posterior_sampling,
+                "bayes_prior_std": float(args.bayes_prior_std),
+                "bayes_initial_std": float(args.bayes_initial_std),
+                "bayes_kl_weight": float(args.bayes_kl_weight),
+                **learner.head.diagnostics(),
+            }
+        )
+    return metadata
+
+
+def evaluate(
+    learner,
+    args,
+    algo: str,
+    episodes: int,
+    *,
+    bayes_use_sample: bool = False,
+) -> dict:
+    sample_distances: list[float] = []
+
+    def episode_start() -> None:
+        learner.resample_policy()
+        sample_distances.append(float(learner.episode_sample_distance()))
+
+    policy = lambda obs_all, masks: decentralized_actions(
+        learner,
+        algo,
+        obs_all,
+        masks,
+        train=False,
+        bayes_use_sample=bayes_use_sample,
+    )
     metrics = evaluate_multi_local_policy(
-        policy=evaluation_policy(learner, algo),
+        policy=policy,
         env_factory=lambda world_seed: make_env(args, world_seed),
         episodes=episodes,
         eval_seed_base=args.eval_seed_base,
+        episode_start_fn=(
+            episode_start if algo in BAYES_QMIX_ALGOS and bayes_use_sample else None
+        ),
     )
-    metrics.update(
-        {
-            "algo": algo,
-            "seed": int(args.seed),
-            "n_agents": int(args.n_agents),
-            "reward_version": args.reward_version,
-        }
-    )
+    metrics.update(_common_metadata(learner, args, algo))
+    if algo in BAYES_QMIX_ALGOS:
+        metrics["evaluation_policy"] = (
+            "posterior_sample_per_episode" if bayes_use_sample else "posterior_mean"
+        )
+        metrics["episode_sample_distance_mean"] = (
+            float(np.mean(sample_distances)) if sample_distances else 0.0
+        )
+    else:
+        metrics["evaluation_policy"] = "deterministic"
     return metrics
 
 
@@ -198,6 +302,7 @@ def train(args, algo: str, run_dir: Path) -> None:
                 "env_config": env.cfg.reward_dict(),
                 "observation_shape": env.observation_shape,
                 "state_dim": env.state_dim,
+                "learner_config": getattr(learner, "cfg", None).__dict__,
             },
             handle,
             indent=2,
@@ -206,10 +311,26 @@ def train(args, algo: str, run_dir: Path) -> None:
 
     csv_path = run_dir / "metrics.csv"
     fields = [
-        "episode", "train_reward", "train_detected", "train_completed",
-        "eval_reward", "eval_detected", "eval_completed",
-        "eval_completed_value", "eval_team_coverage", "eval_overlap",
-        "eval_collision", "best_score",
+        "episode",
+        "train_reward",
+        "train_detected",
+        "train_completed",
+        "eval_reward",
+        "eval_detected",
+        "eval_completed",
+        "eval_completed_value",
+        "eval_team_coverage",
+        "eval_overlap",
+        "eval_simultaneous_overlap",
+        "eval_collision",
+        "best_score",
+        "train_loss",
+        "train_td_loss",
+        "train_kl_loss",
+        "posterior_std_mean",
+        "posterior_std_max",
+        "posterior_kl_per_parameter",
+        "episode_sample_distance",
     ]
     with csv_path.open("w", newline="") as handle:
         csv.DictWriter(handle, fieldnames=fields).writeheader()
@@ -217,23 +338,26 @@ def train(args, algo: str, run_dir: Path) -> None:
     best_score = -float("inf")
     best_episode = 0
     global_env_steps = 0
+    last_train_stats: dict[str, float] = {}
+
     for episode in range(1, int(args.episodes) + 1):
         obs_all, info = env.reset()
         state = env.global_state()
-        if algo == "shared_bdqn":
-            # One coherent posterior sample shared by the whole team for one episode.
+        if algo == "shared_bdqn" or algo in BAYES_QMIX_ALGOS:
             learner.resample_policy()
         done = False
         episode_reward = 0.0
         while not done:
             masks = env.action_mask()
-            actions = decentralized_actions(learner, algo, obs_all, masks, train=True)
+            actions = decentralized_actions(
+                learner, algo, obs_all, masks, train=True
+            )
             next_obs, reward, terminated, truncated, info = env.step(actions)
             done = bool(terminated or truncated)
             next_state = env.global_state()
             next_masks = env.action_mask()
             stored_reward = float(reward) * float(args.reward_scale)
-            if algo == "qmix_ddqn":
+            if algo in JOINT_ALGOS:
                 learner.replay.add(
                     obs_all=obs_all,
                     state=state,
@@ -258,13 +382,21 @@ def train(args, algo: str, run_dir: Path) -> None:
                 global_env_steps >= args.learning_starts
                 and global_env_steps % args.train_every == 0
             ):
-                learner.train_step()
+                last_train_stats = learner.train_step()
             obs_all, state = next_obs, next_state
             episode_reward += float(reward)
             global_env_steps += 1
 
         if episode % args.eval_every == 0 or episode == args.episodes:
-            metrics = evaluate(learner, args, algo, args.eval_episodes)
+            # Mean-posterior evaluation is deliberately used for checkpoint selection:
+            # it reduces selection noise and keeps shared/independent modes comparable.
+            metrics = evaluate(
+                learner,
+                args,
+                algo,
+                args.eval_episodes,
+                bayes_use_sample=False,
+            )
             score = checkpoint_score(metrics)
             if score > best_score:
                 best_score = score
@@ -284,15 +416,34 @@ def train(args, algo: str, run_dir: Path) -> None:
                         "eval_completed_value": metrics["completed_value_mean"],
                         "eval_team_coverage": metrics["team_coverage_ratio_mean"],
                         "eval_overlap": metrics["coverage_overlap_ratio_mean"],
+                        "eval_simultaneous_overlap": metrics.get(
+                            "simultaneous_sensor_overlap_ratio_mean", float("nan")
+                        ),
                         "eval_collision": metrics["collision_agent_ratio"],
                         "best_score": best_score,
+                        "train_loss": last_train_stats.get("loss", float("nan")),
+                        "train_td_loss": last_train_stats.get("td_loss", float("nan")),
+                        "train_kl_loss": last_train_stats.get("kl_loss", float("nan")),
+                        "posterior_std_mean": last_train_stats.get(
+                            "posterior_std_mean", float("nan")
+                        ),
+                        "posterior_std_max": last_train_stats.get(
+                            "posterior_std_max", float("nan")
+                        ),
+                        "posterior_kl_per_parameter": last_train_stats.get(
+                            "posterior_kl_per_parameter", float("nan")
+                        ),
+                        "episode_sample_distance": last_train_stats.get(
+                            "episode_sample_distance", float("nan")
+                        ),
                     }
                 )
             print(
                 f"[episode {episode}] reward={episode_reward:.3f} "
                 f"completed={metrics['completed_mean']:.3f} "
                 f"coverage={metrics['team_coverage_ratio_mean']:.3f} "
-                f"overlap={metrics['coverage_overlap_ratio_mean']:.3f}"
+                f"overlap={metrics['coverage_overlap_ratio_mean']:.3f} "
+                f"sim_overlap={metrics.get('simultaneous_sensor_overlap_ratio_mean', float('nan')):.3f}"
             )
     if best_episode == 0:
         learner.save(str(run_dir / "best.pt"))
@@ -300,10 +451,77 @@ def train(args, algo: str, run_dir: Path) -> None:
 
 
 def final_evaluation(args, algo: str, run_dir: Path, output_json: Path) -> dict:
+    # Fix the posterior-sampling stream independently of the stochastic training path.
+    seed_everything(int(args.posterior_eval_seed_base) + int(args.seed))
     env = make_env(args, int(args.seed))
     learner = make_learner(args, env, algo, int(args.seed))
     learner.load(str(run_dir / "best.pt"))
-    metrics = evaluate(learner, args, algo, args.final_eval_episodes)
+
+    if algo in BAYES_QMIX_ALGOS:
+        trained_sampling = str(learner.cfg.posterior_sampling)
+        sampled_by_mode: dict[str, dict] = {}
+        for mode_index, sampling_mode in enumerate(("shared", "independent")):
+            learner.cfg.posterior_sampling = sampling_mode
+            # Reusing the same base stream makes the shared draw equal to the first
+            # independent draw, while keeping the complete evaluation reproducible.
+            seed_everything(int(args.posterior_eval_seed_base) + int(args.seed))
+            sampled_by_mode[sampling_mode] = evaluate(
+                learner,
+                args,
+                algo,
+                args.final_eval_episodes,
+                bayes_use_sample=True,
+            )
+
+        learner.cfg.posterior_sampling = trained_sampling
+        mean_policy = evaluate(
+            learner,
+            args,
+            algo,
+            args.final_eval_episodes,
+            bayes_use_sample=False,
+        )
+        metrics = dict(sampled_by_mode[trained_sampling])
+        metrics["posterior_sampling"] = trained_sampling
+        metrics["trained_posterior_sampling"] = trained_sampling
+        metrics["evaluation_policy"] = f"posterior_sample_{trained_sampling}_per_episode"
+
+        selected_cross_metrics = (
+            "reward_mean",
+            "detected_mean",
+            "completed_mean",
+            "completed_value_mean",
+            "team_coverage_ratio_mean",
+            "coverage_overlap_ratio_mean",
+            "simultaneous_sensor_overlap_ratio_mean",
+            "collision_agent_ratio",
+            "first_detection_step_mean",
+            "first_completion_step_mean",
+            "episode_sample_distance_mean",
+        )
+        for sampling_mode, sampled_metrics in sampled_by_mode.items():
+            for key in selected_cross_metrics:
+                if key in sampled_metrics:
+                    metrics[f"sampled_{sampling_mode}_{key}"] = sampled_metrics[key]
+        for key in selected_cross_metrics:
+            shared_key = f"sampled_shared_{key}"
+            independent_key = f"sampled_independent_{key}"
+            if shared_key in metrics and independent_key in metrics:
+                metrics[f"execution_independent_minus_shared_{key}"] = (
+                    float(metrics[independent_key]) - float(metrics[shared_key])
+                )
+
+        for key, value in mean_policy.items():
+            if isinstance(value, (int, float)) and key not in {
+                "seed",
+                "n_agents",
+                "detection_probability",
+            }:
+                metrics[f"mean_policy_{key}"] = value
+        metrics["checkpoint_selection_policy"] = "posterior_mean"
+    else:
+        metrics = evaluate(learner, args, algo, args.final_eval_episodes)
+
     output_json.parent.mkdir(parents=True, exist_ok=True)
     with output_json.open("w") as handle:
         json.dump(metrics, handle, indent=2, allow_nan=True)
@@ -320,8 +538,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eval-episodes", type=int, default=30)
     parser.add_argument("--final-eval-episodes", type=int, default=1000)
     parser.add_argument("--eval-seed-base", type=int, default=100_000)
+    parser.add_argument("--posterior-eval-seed-base", type=int, default=900_000)
     parser.add_argument("--run-dir", required=True)
     parser.add_argument("--eval-json", required=True)
+    parser.add_argument("--scenario-label", default="deterministic_privileged")
 
     parser.add_argument("--reward-version", default="multi_local_v1_from_single_D")
     parser.add_argument("--n-agents", type=int, default=3)
@@ -336,6 +556,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-steps", type=int, default=150)
     parser.add_argument("--include-agent-id-map", action="store_true")
     parser.add_argument("--collision-penalty", type=float, default=-0.02)
+    parser.add_argument(
+        "--global-state-mode",
+        choices=["privileged_truth", "memory_union"],
+        default="privileged_truth",
+    )
 
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -353,6 +578,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mixing-embed-dim", type=int, default=32)
     parser.add_argument("--mixing-hypernet-embed", type=int, default=64)
 
+    # Existing shared-BDQN controls.
     parser.add_argument("--posterior-update-period", type=int, default=500)
     parser.add_argument("--posterior-replay-size", type=int, default=8192)
     parser.add_argument("--posterior-chunk-size", type=int, default=512)
@@ -360,8 +586,21 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--blr-lambda", type=float, default=1.0)
     parser.add_argument("--blr-noise-var", type=float, default=1.0)
     parser.add_argument("--posterior-jitter", type=float, default=1e-6)
-    parser.add_argument("--posterior-mode", choices=["rebuild", "cumulative"], default="rebuild")
+    parser.add_argument(
+        "--posterior-mode", choices=["rebuild", "cumulative"], default="rebuild"
+    )
     parser.add_argument("--freeze-feature-after-steps", type=int, default=None)
+
+    # Bayesian-QMIX variational utility-head controls.
+    parser.add_argument("--bayes-prior-std", type=float, default=1.0)
+    parser.add_argument("--bayes-initial-std", type=float, default=0.05)
+    parser.add_argument("--bayes-min-std", type=float, default=1e-4)
+    parser.add_argument("--bayes-max-std", type=float, default=1.0)
+    parser.add_argument("--bayes-kl-weight", type=float, default=1e-3)
+    parser.add_argument("--bayes-epsilon-start", type=float, default=0.0)
+    parser.add_argument("--bayes-epsilon-end", type=float, default=0.0)
+    parser.add_argument("--bayes-uncertainty-mc-samples", type=int, default=16)
+
     parser.add_argument("--device", choices=["auto", "cpu", "mps", "cuda"], default="auto")
     parser.add_argument("--torch-threads", type=int, default=1)
     return parser

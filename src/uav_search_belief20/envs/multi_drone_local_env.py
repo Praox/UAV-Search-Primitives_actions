@@ -33,6 +33,7 @@ class MultiDroneLocalEnvConfig:
     reward_version: str = "multi_local_v1_from_single_D"
     use_boundary_action_mask: bool = True
     include_agent_id_map: bool = False
+    global_state_mode: str = "privileged_truth"
 
     step_penalty: float = -0.005
     collision_penalty: float = -0.02
@@ -73,6 +74,8 @@ class MultiDroneLocalMemoryEnv:
             raise ValueError("n_agents must be positive")
         if self.cfg.max_trackers_per_target != 1:
             raise ValueError("v1 supports exactly one tracker per target and step")
+        if self.cfg.global_state_mode not in {"privileged_truth", "memory_union"}:
+            raise ValueError("global_state_mode must be privileged_truth or memory_union")
         self.rng = np.random.default_rng(self.cfg.seed)
         self.observation_channels = 8 + int(self.cfg.include_agent_id_map)
         self.observation_shape = (
@@ -124,6 +127,7 @@ class MultiDroneLocalMemoryEnv:
         self.last_new_cells = np.zeros(self.cfg.n_agents, dtype=bool)
         self.last_new_observed_cells = np.zeros(self.cfg.n_agents, dtype=np.int64)
         self.last_new_team_observed_cells = 0
+        self.last_simultaneous_sensor_overlap_ratio = 0.0
         self.last_tracking_progress = np.zeros(self.cfg.n_agents, dtype=bool)
         self.last_track_progress_targets: list[int | None] = [
             None for _ in range(self.cfg.n_agents)
@@ -160,6 +164,7 @@ class MultiDroneLocalMemoryEnv:
         self.last_new_cells[:] = False
         self.last_new_observed_cells[:] = 0
         self.last_new_team_observed_cells = 0
+        self.last_simultaneous_sensor_overlap_ratio = 0.0
         self.last_tracking_progress[:] = False
         self.last_track_progress_targets = [None for _ in range(self.cfg.n_agents)]
         self.last_collision_count = 0
@@ -193,6 +198,16 @@ class MultiDroneLocalMemoryEnv:
             for position in self.drone_pos
         ]
         visible_union: set[tuple[int, int]] = set().union(*visible_sets)
+        visibility_counts: dict[tuple[int, int], int] = {}
+        for visible in visible_sets:
+            for cell in visible:
+                visibility_counts[cell] = visibility_counts.get(cell, 0) + 1
+        simultaneous_overlap_cells = sum(
+            1 for count in visibility_counts.values() if count > 1
+        )
+        self.last_simultaneous_sensor_overlap_ratio = (
+            float(simultaneous_overlap_cells) / float(max(1, len(visible_union)))
+        )
         new_team_cells = [cell for cell in visible_union if self.team_visited[cell] < 0.5]
         self.last_new_team_observed_cells = len(new_team_cells)
         if new_team_cells:
@@ -231,20 +246,51 @@ class MultiDroneLocalMemoryEnv:
         return self._obs_all(), float(reward), terminated, truncated, self._info()
 
     def global_state(self) -> np.ndarray:
+        """Return the centralized mixer state selected by ``global_state_mode``.
+
+        ``privileged_truth`` preserves the validated 31-value state used by the
+        current QMIX baseline. ``memory_union`` has exactly the same dimension but
+        replaces hidden target truth by the union of facts present in local UAV
+        memories. This makes the later state-information ablation architecture-fair.
+        """
         scale = float(max(1, self.cfg.grid_size - 1))
         values: list[float] = []
         for position in self.drone_pos:
             values.extend([float(position[0]) / scale, float(position[1]) / scale])
         denom = float(max(1, self.cfg.track_required))
-        for target_id, position in enumerate(self.target_pos):
-            values.extend([
-                float(position[0]) / scale,
-                float(position[1]) / scale,
-                float(self.target_values[target_id]) / 2.0,
-                float(self.detected[target_id]),
-                float(self.completed[target_id]),
-                min(1.0, float(self.track_progress[target_id]) / denom),
-            ])
+
+        if self.cfg.global_state_mode == "privileged_truth":
+            for target_id, position in enumerate(self.target_pos):
+                values.extend([
+                    float(position[0]) / scale,
+                    float(position[1]) / scale,
+                    float(self.target_values[target_id]) / 2.0,
+                    float(self.detected[target_id]),
+                    float(self.completed[target_id]),
+                    min(1.0, float(self.track_progress[target_id]) / denom),
+                ])
+        else:
+            for target_id in range(self.n_targets):
+                records = [
+                    memory.known_targets[target_id]
+                    for memory in self.memories
+                    if target_id in memory.known_targets
+                ]
+                if not records:
+                    values.extend([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                    continue
+                most_recent = max(records, key=lambda target: int(target.last_seen_step))
+                max_progress = max(int(target.progress) for target in records)
+                known_completed = any(bool(target.completed) for target in records)
+                values.extend([
+                    float(most_recent.pos[0]) / scale,
+                    float(most_recent.pos[1]) / scale,
+                    float(most_recent.value) / 2.0,
+                    1.0,
+                    float(known_completed),
+                    min(1.0, float(max_progress) / denom),
+                ])
+
         values.append(1.0 - float(self.t) / float(self.cfg.max_steps))
         state = np.asarray(values, dtype=np.float32)
         if state.shape != (self.state_dim,):
@@ -452,6 +498,10 @@ class MultiDroneLocalMemoryEnv:
             "last_new_cells": self.last_new_cells.copy(),
             "last_new_observed_cells": self.last_new_observed_cells.copy(),
             "last_new_team_observed_cells": int(self.last_new_team_observed_cells),
+            "last_simultaneous_sensor_overlap_ratio": float(
+                self.last_simultaneous_sensor_overlap_ratio
+            ),
+            "global_state_mode": self.cfg.global_state_mode,
             "last_tracking_progress": self.last_tracking_progress.copy(),
             "last_track_progress_targets": list(self.last_track_progress_targets),
             "last_reward_parts": dict(self.last_reward_parts),
