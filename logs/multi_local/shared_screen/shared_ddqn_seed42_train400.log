@@ -1,0 +1,9 @@
+[episode 50] reward=0.421 completed=0.700 coverage=0.485 overlap=0.249
+[episode 100] reward=24.926 completed=0.633 coverage=0.623 overlap=0.300
+[episode 150] reward=-1.196 completed=0.567 coverage=0.560 overlap=0.271
+[episode 200] reward=-3.764 completed=0.700 coverage=0.585 overlap=0.281
+[episode 250] reward=9.481 completed=0.600 coverage=0.517 overlap=0.287
+[episode 300] reward=-9.174 completed=0.700 coverage=0.474 overlap=0.262
+[episode 350] reward=-5.171 completed=0.800 coverage=0.476 overlap=0.236
+[episode 400] reward=-2.579 completed=0.633 coverage=0.413 overlap=0.269
+Best checkpoint: runs/multi_local/shared_screen/shared_ddqn_seed42_train400/best.pt at episode 100

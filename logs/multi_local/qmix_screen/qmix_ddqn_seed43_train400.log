@@ -1,0 +1,9 @@
+[episode 50] reward=2.736 completed=0.700 coverage=0.467 overlap=0.212
+[episode 100] reward=17.066 completed=0.433 coverage=0.456 overlap=0.244
+[episode 150] reward=1.621 completed=0.533 coverage=0.499 overlap=0.390
+[episode 200] reward=3.276 completed=0.600 coverage=0.479 overlap=0.366
+[episode 250] reward=1.521 completed=0.967 coverage=0.589 overlap=0.372
+[episode 300] reward=-0.011 completed=1.233 coverage=0.599 overlap=0.323
+[episode 350] reward=3.749 completed=0.900 coverage=0.599 overlap=0.367
+[episode 400] reward=2.266 completed=1.333 coverage=0.636 overlap=0.353
+Best checkpoint: runs/multi_local/qmix_screen/qmix_ddqn_seed43_train400/best.pt at episode 400

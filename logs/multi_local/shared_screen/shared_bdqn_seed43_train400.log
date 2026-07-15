@@ -1,0 +1,9 @@
+[episode 50] reward=2.576 completed=1.033 coverage=0.610 overlap=0.350
+[episode 100] reward=-9.469 completed=1.133 coverage=0.715 overlap=0.415
+[episode 150] reward=11.801 completed=1.267 coverage=0.688 overlap=0.398
+[episode 200] reward=7.344 completed=1.333 coverage=0.583 overlap=0.479
+[episode 250] reward=1.539 completed=1.567 coverage=0.688 overlap=0.399
+[episode 300] reward=-7.906 completed=1.067 coverage=0.664 overlap=0.387
+[episode 350] reward=12.481 completed=1.333 coverage=0.670 overlap=0.423
+[episode 400] reward=4.974 completed=0.933 coverage=0.644 overlap=0.420
+Best checkpoint: runs/multi_local/shared_screen/shared_bdqn_seed43_train400/best.pt at episode 250
