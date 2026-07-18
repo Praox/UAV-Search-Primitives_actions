@@ -1,0 +1,46 @@
+Traceback (most recent call last):
+  File "/Users/remy/Github/uav-search-belief20-primitive/scripts/train_thesis_single.py", line 357, in <module>
+    main()
+    ~~~~^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/scripts/train_thesis_single.py", line 261, in main
+    last_stats = agent.train_step()
+  File "/Users/remy/Github/uav-search-belief20-primitive/src/uav_search_belief20/agents/dqn_agent.py", line 148, in train_step
+    loss, q_mean, target_mean = self._gradient_update(batch)
+                                ~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/src/uav_search_belief20/agents/dqn_agent.py", line 190, in _gradient_update
+    q_all = self.q_net(obs)
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/remy/Github/uav-search-belief20-primitive/src/uav_search_belief20/models/networks.py", line 85, in forward
+    return self.head(self.feature_net(x))
+                     ~~~~~~~~~~~~~~~~^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/remy/Github/uav-search-belief20-primitive/src/uav_search_belief20/models/networks.py", line 55, in forward
+    features = self.mlp(self.conv(x))
+                        ~~~~~~~~~^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/modules/pooling.py", line 1512, in forward
+    return F.adaptive_avg_pool2d(input, self.output_size)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/remy/Github/uav-search-belief20-primitive/.venv/lib/python3.13/site-packages/torch/nn/functional.py", line 1447, in adaptive_avg_pool2d
+    return torch._C._nn.adaptive_avg_pool2d(input, _output_size)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Adaptive pool MPS: input sizes must be divisible by output sizes. Non-divisible input sizes are not implemented on MPS device yet. For now, you can manually transfer tensor to cpu in this case. Please refer to [this issue](https://github.com/pytorch/pytorch/issues/96056)

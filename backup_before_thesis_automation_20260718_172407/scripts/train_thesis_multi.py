@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import math
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +13,7 @@ from uav_search_belief20.envs.thesis_envs import (
     ThesisMultiDroneLocalMemoryEnv,
     ThesisMultiEnvConfig,
 )
-from uav_search_belief20.experiments.thesis_evaluation import evaluate_multi_detailed
+from uav_search_belief20.evaluation_multi_local import evaluate_multi_local_policy
 from uav_search_belief20.marl.thesis_qmix import (
     ThesisBayesianQMIXAgent,
     ThesisBayesianQMIXConfig,
@@ -25,50 +24,6 @@ from uav_search_belief20.utils import pick_device, seed_everything
 
 
 JOINT_ALGOS = {"qmix_ddqn", "bayes_qmix_shared", "bayes_qmix_independent"}
-METRIC_FIELDS = [
-    "episode",
-    "global_step",
-    "train_reward",
-    "train_detected",
-    "train_completed",
-    "train_completed_value",
-    "validation_reward",
-    "validation_reward_std",
-    "validation_detected",
-    "validation_completed",
-    "validation_completed_value",
-    "validation_coverage",
-    "validation_local_coverage",
-    "validation_overlap",
-    "validation_knowledge_overlap",
-    "validation_simultaneous_overlap",
-    "validation_collision",
-    "validation_episode_length",
-    "validation_first_detection",
-    "validation_first_completion",
-    "validation_stay",
-    "validation_local_sensor_revisit",
-    "validation_local_new_observed",
-    "validation_team_new_observed",
-    "validation_tracking_progress",
-    "best_score",
-    "loss",
-    "td_loss",
-    "kl_loss",
-    "q_mean",
-    "q_tot_mean",
-    "target_mean",
-    "epsilon",
-    "posterior_rebuilds",
-    "predictive_epistemic_std_mean",
-    "predictive_selected_std_mean",
-    "predictive_max_std_mean",
-    "td_residual_variance",
-    "posterior_std_mean",
-    "posterior_std_min",
-    "posterior_std_max",
-    "posterior_kl_per_parameter",
-]
 
 
 def make_env(args, seed: int) -> ThesisMultiDroneLocalMemoryEnv:
@@ -100,7 +55,8 @@ def make_env(args, seed: int) -> ThesisMultiDroneLocalMemoryEnv:
 
 
 def make_agent(args, env, device: str):
-    # One QMIX batch of B joint transitions contains B*N local observations.
+    # A QMIX batch of B joint transitions contains B*N local observations.
+    # The shared learner therefore uses B*N local transitions per update.
     shared_batch = args.batch_size * args.n_agents
     common_local = dict(
         obs_shape=env.observation_shape,
@@ -160,18 +116,14 @@ def make_agent(args, env, device: str):
         target_tau=args.target_tau,
         target_update_period=args.target_update_period,
         huber_delta=args.huber_delta,
+        epsilon_start=args.epsilon_start,
+        epsilon_end=args.epsilon_end,
         epsilon_decay_steps=args.epsilon_decay_steps,
         device=device,
         seed=args.seed,
     )
     if args.algo == "qmix_ddqn":
-        return ThesisQMIXAgent(
-            ThesisQMIXConfig(
-                **common_joint,
-                epsilon_start=args.epsilon_start,
-                epsilon_end=args.epsilon_end,
-            )
-        )
+        return ThesisQMIXAgent(ThesisQMIXConfig(**common_joint))
 
     sampling = "shared" if args.algo == "bayes_qmix_shared" else "independent"
     return ThesisBayesianQMIXAgent(
@@ -200,16 +152,12 @@ def actions_for(agent, algo: str, obs_all, masks, *, train: bool, sampled: bool 
     if algo == "shared_bdqn":
         return np.asarray(
             [
-                agent.act(
-                    obs_all[index],
-                    use_sample=(train or sampled),
-                    action_mask=masks[index],
-                )
+                agent.act(obs_all[index], use_sample=(train or sampled), action_mask=masks[index])
                 for index in range(obs_all.shape[0])
             ],
             dtype=np.int64,
         )
-
+    # Do not advance epsilon once per UAV. Advance it once after the joint action.
     actions = np.asarray(
         [
             agent.act(
@@ -228,41 +176,40 @@ def actions_for(agent, algo: str, obs_all, masks, *, train: bool, sampled: bool 
 
 
 def evaluate(agent, args, seed_base: int, episodes: int, *, sampled: bool = False):
-    def policy(env, obs_all, masks, episode_index):
-        del env, episode_index
-        return actions_for(agent, args.algo, obs_all, masks, train=False, sampled=sampled)
+    def policy(obs_all, masks):
+        return actions_for(
+            agent,
+            args.algo,
+            obs_all,
+            masks,
+            train=False,
+            sampled=sampled,
+        )
 
-    def on_start(episode_index: int, world_seed: int) -> None:
-        del episode_index, world_seed
-        if sampled and (args.algo == "shared_bdqn" or args.algo.startswith("bayes_qmix")):
-            agent.resample_policy()
-
-    _, summary = evaluate_multi_detailed(
-        env_factory=lambda seed: make_env(args, seed),
+    episode_start = None
+    if sampled and (args.algo == "shared_bdqn" or args.algo.startswith("bayes_qmix")):
+        episode_start = agent.resample_policy
+    return evaluate_multi_local_policy(
         policy=policy,
+        env_factory=lambda seed: make_env(args, seed),
         episodes=episodes,
-        seed_base=seed_base,
-        on_episode_start=on_start if sampled else None,
+        eval_seed_base=seed_base,
+        episode_start_fn=episode_start,
     )
-    return summary
 
 
-def score(metrics: dict, max_steps: int) -> float:
-    first_completion = float(metrics.get("first_completion_step_mean", max_steps))
-    if not math.isfinite(first_completion):
-        first_completion = float(max_steps)
+def score(metrics: dict) -> float:
     return float(
-        10.0 * float(metrics.get("completed_mean", 0.0))
-        + 3.0 * float(metrics.get("completed_value_mean", 0.0))
-        + float(metrics.get("team_coverage_ratio_mean", 0.0))
-        - 2.0 * float(metrics.get("coverage_overlap_ratio_mean", 0.0))
-        - 3.0 * float(metrics.get("collision_agent_ratio", 0.0))
-        - 0.01 * first_completion
-        + 0.1 * float(metrics.get("reward_mean", 0.0))
+        10.0 * metrics["completed_mean"]
+        + 3.0 * metrics["completed_value_mean"]
+        + metrics["team_coverage_ratio_mean"]
+        - 2.0 * metrics["coverage_overlap_ratio_mean"]
+        - 3.0 * metrics["collision_agent_ratio"]
+        + 0.1 * metrics["reward_mean"]
     )
 
 
-def build_parser() -> argparse.ArgumentParser:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--algo",
@@ -329,12 +276,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--final-test-episodes", type=int, default=1000)
     parser.add_argument("--validation-seed-base", type=int, default=100_000)
     parser.add_argument("--final-test-seed-base", type=int, default=200_000)
-    parser.add_argument("--skip-final-eval", action="store_true")
-    return parser
+    args = parser.parse_args()
 
-
-def main() -> None:
-    args = build_parser().parse_args()
     seed_everything(args.seed)
     device = pick_device() if args.device == "auto" else args.device
     run_dir = Path(args.run_dir)
@@ -344,14 +287,16 @@ def main() -> None:
 
     with (run_dir / "run_config.json").open("w") as handle:
         json.dump(vars(args), handle, indent=2)
+    fields = [
+        "episode", "train_reward", "validation_reward", "validation_completed",
+        "validation_completed_value", "validation_coverage", "validation_overlap",
+        "validation_collision", "best_score", "loss",
+    ]
     with (run_dir / "metrics.csv").open("w", newline="") as handle:
-        csv.DictWriter(handle, fieldnames=METRIC_FIELDS).writeheader()
+        csv.DictWriter(handle, fieldnames=fields).writeheader()
 
     global_step = 0
     best_score = -float("inf")
-    best_episode = 0
-    last_stats: dict[str, float] = {}
-
     for episode in range(1, args.episodes + 1):
         obs_all, info = env.reset()
         state = env.global_state()
@@ -359,6 +304,7 @@ def main() -> None:
             agent.resample_policy()
         done = False
         episode_reward = 0.0
+        last_stats: dict[str, float] = {}
         while not done:
             masks = env.action_mask()
             actions = actions_for(agent, args.algo, obs_all, masks, train=True)
@@ -405,82 +351,41 @@ def main() -> None:
             args.validation_episodes,
             sampled=False,
         )
-        current_score = score(validation, args.max_steps)
+        current_score = score(validation)
         if current_score > best_score:
             best_score = current_score
-            best_episode = episode
             agent.save(str(run_dir / "best.pt"))
         agent.save(str(run_dir / "latest.pt"))
-
-        row = {
-            "episode": episode,
-            "global_step": global_step,
-            "train_reward": episode_reward,
-            "train_detected": info.get("detected", np.nan),
-            "train_completed": info.get("completed", np.nan),
-            "train_completed_value": info.get("completed_value", np.nan),
-            "validation_reward": validation.get("reward_mean", np.nan),
-            "validation_reward_std": validation.get("reward_std", np.nan),
-            "validation_detected": validation.get("detected_mean", np.nan),
-            "validation_completed": validation.get("completed_mean", np.nan),
-            "validation_completed_value": validation.get("completed_value_mean", np.nan),
-            "validation_coverage": validation.get("team_coverage_ratio_mean", np.nan),
-            "validation_local_coverage": validation.get("mean_local_coverage_ratio_mean", np.nan),
-            "validation_overlap": validation.get("coverage_overlap_ratio_mean", np.nan),
-            "validation_knowledge_overlap": validation.get("knowledge_overlap_ratio_mean", np.nan),
-            "validation_simultaneous_overlap": validation.get("simultaneous_sensor_overlap_ratio_mean", np.nan),
-            "validation_collision": validation.get("collision_agent_ratio", np.nan),
-            "validation_episode_length": validation.get("episode_length_mean", np.nan),
-            "validation_first_detection": validation.get("first_detection_step_mean", np.nan),
-            "validation_first_completion": validation.get("first_completion_step_mean", np.nan),
-            "validation_stay": validation.get("stay_ratio", np.nan),
-            "validation_local_sensor_revisit": validation.get("local_sensor_revisit_ratio", np.nan),
-            "validation_local_new_observed": validation.get("local_new_observed_cells_per_decision", np.nan),
-            "validation_team_new_observed": validation.get("team_new_observed_cells_per_env_step", np.nan),
-            "validation_tracking_progress": validation.get("tracking_progress_ratio", np.nan),
-            "best_score": best_score,
-            **{field: last_stats.get(field, np.nan) for field in METRIC_FIELDS if field in last_stats},
-        }
-        if "q_mean" not in row or not np.isfinite(row.get("q_mean", np.nan)):
-            row["q_mean"] = last_stats.get("q_tot_mean", np.nan)
         with (run_dir / "metrics.csv").open("a", newline="") as handle:
-            csv.DictWriter(handle, fieldnames=METRIC_FIELDS, extrasaction="ignore").writerow(row)
-
+            csv.DictWriter(handle, fieldnames=fields).writerow(
+                {
+                    "episode": episode,
+                    "train_reward": episode_reward,
+                    "validation_reward": validation["reward_mean"],
+                    "validation_completed": validation["completed_mean"],
+                    "validation_completed_value": validation["completed_value_mean"],
+                    "validation_coverage": validation["team_coverage_ratio_mean"],
+                    "validation_overlap": validation["coverage_overlap_ratio_mean"],
+                    "validation_collision": validation["collision_agent_ratio"],
+                    "best_score": best_score,
+                    "loss": last_stats.get("loss", np.nan),
+                }
+            )
         print(
-            f"episode={episode} train_reward={episode_reward:.3f} "
-            f"val_reward={float(validation.get('reward_mean', np.nan)):.3f} "
-            f"val_completed={float(validation.get('completed_mean', np.nan)):.3f} "
-            f"coverage={float(validation.get('team_coverage_ratio_mean', np.nan)):.3f} "
-            f"collision={float(validation.get('collision_agent_ratio', np.nan)):.3f} "
-            f"loss={float(last_stats.get('loss', np.nan)):.4f}"
+            f"episode={episode} reward={episode_reward:.3f} "
+            f"val_completed={validation['completed_mean']:.3f} "
+            f"coverage={validation['team_coverage_ratio_mean']:.3f}"
         )
 
-    if best_episode == 0:
-        agent.save(str(run_dir / "best.pt"))
-    with (run_dir / "training_status.json").open("w") as handle:
-        json.dump(
-            {
-                "completed": True,
-                "best_episode": best_episode,
-                "best_score": best_score,
-                "global_step": global_step,
-            },
-            handle,
-            indent=2,
-        )
-
-    if args.skip_final_eval:
-        return
     agent.load(str(run_dir / "best.pt"))
-    output = {
-        "deterministic_or_posterior_mean": evaluate(
-            agent,
-            args,
-            args.final_test_seed_base,
-            args.final_test_episodes,
-            sampled=False,
-        )
-    }
+    final_mean = evaluate(
+        agent,
+        args,
+        args.final_test_seed_base,
+        args.final_test_episodes,
+        sampled=False,
+    )
+    output = {"deterministic_or_posterior_mean": final_mean}
     if args.algo == "shared_bdqn" or args.algo.startswith("bayes_qmix"):
         output["posterior_sample"] = evaluate(
             agent,

@@ -3,51 +3,19 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import math
 from pathlib import Path
 
 import numpy as np
+import torch
 
 from uav_search_belief20.agents.bdqn_agent import BDQNAgent, BDQNConfig
 from uav_search_belief20.agents.dqn_agent import DQNAgent, DQNConfig
-from uav_search_belief20.envs.thesis_envs import ThesisEnvConfig, ThesisPrimitiveSearchEnv
-from uav_search_belief20.experiments.thesis_evaluation import evaluate_single_detailed
+from uav_search_belief20.envs.thesis_envs import (
+    ThesisEnvConfig,
+    ThesisPrimitiveSearchEnv,
+)
+from uav_search_belief20.evaluation import evaluate_policy
 from uav_search_belief20.utils import pick_device, seed_everything
-
-
-METRIC_FIELDS = [
-    "episode",
-    "global_step",
-    "train_reward",
-    "train_detected",
-    "train_completed",
-    "train_completed_value",
-    "validation_reward",
-    "validation_reward_std",
-    "validation_detected",
-    "validation_completed",
-    "validation_completed_value",
-    "validation_coverage",
-    "validation_episode_length",
-    "validation_first_detection",
-    "validation_first_completion",
-    "validation_stay",
-    "validation_boundary",
-    "validation_revisit",
-    "validation_sensor_revisit",
-    "validation_new_observed_per_step",
-    "validation_tracking_progress",
-    "best_score",
-    "loss",
-    "q_mean",
-    "target_mean",
-    "epsilon",
-    "posterior_rebuilds",
-    "predictive_epistemic_std_mean",
-    "predictive_selected_std_mean",
-    "predictive_max_std_mean",
-    "td_residual_variance",
-]
 
 
 def make_env(args, seed: int) -> ThesisPrimitiveSearchEnv:
@@ -122,40 +90,42 @@ def make_agent(args, env, device: str):
 
 
 def evaluate(agent, args, seed_base: int, episodes: int, *, sampled: bool = False):
+    def env_factory(seed: int):
+        return make_env(args, seed)
+
     def policy(env, obs, episode_index):
         del episode_index
         if isinstance(agent, BDQNAgent):
-            return agent.act(obs, use_sample=sampled, action_mask=env.action_mask())
+            return agent.act(
+                obs,
+                use_sample=sampled,
+                action_mask=env.action_mask(),
+            )
         return agent.act(obs, explore=False, action_mask=env.action_mask())
 
-    def on_start(episode_index: int, world_seed: int) -> None:
-        del episode_index, world_seed
-        if sampled and isinstance(agent, BDQNAgent):
-            agent.resample_policy()
-
-    _, summary = evaluate_single_detailed(
-        env_factory=lambda seed: make_env(args, seed),
-        policy=policy,
+    return evaluate_policy(
+        env_factory,
+        policy,
         episodes=episodes,
         seed_base=seed_base,
-        on_episode_start=on_start if sampled else None,
+        on_episode_start=(
+            (lambda _: agent.resample_policy())
+            if sampled and isinstance(agent, BDQNAgent)
+            else None
+        ),
     )
-    return summary
 
 
-def score(metrics: dict, max_steps: int) -> float:
-    first_completion = float(metrics.get("first_completion_step_mean", max_steps))
-    if not math.isfinite(first_completion):
-        first_completion = float(max_steps)
+def score(metrics: dict) -> float:
     return float(
-        10.0 * float(metrics.get("completed_mean", 0.0))
-        + 3.0 * float(metrics.get("completed_value_mean", 0.0))
-        - 0.02 * first_completion
-        + 0.1 * float(metrics.get("reward_mean", 0.0))
+        10.0 * metrics["completed_mean"]
+        + 3.0 * metrics["completed_value_mean"]
+        - 0.02 * metrics["first_completion_step_mean"]
+        + 0.1 * metrics["reward_mean"]
     )
 
 
-def build_parser() -> argparse.ArgumentParser:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--algo", choices=["ddqn", "bdqn"], required=True)
     parser.add_argument("--seed", type=int, default=42)
@@ -200,22 +170,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--warmstart-ddqn", default="")
     parser.add_argument("--adapt-bdqn-features", action="store_true")
 
-    # Accepted for runner symmetry; they are unused by the single-BDQN implementation.
-    parser.add_argument("--bayes-prior-std", type=float, default=1.0)
-    parser.add_argument("--bayes-initial-std", type=float, default=0.05)
-    parser.add_argument("--bayes-kl-weight", type=float, default=1e-3)
-
     parser.add_argument("--eval-every", type=int, default=50)
     parser.add_argument("--validation-episodes", type=int, default=100)
     parser.add_argument("--final-test-episodes", type=int, default=1000)
     parser.add_argument("--validation-seed-base", type=int, default=100_000)
     parser.add_argument("--final-test-seed-base", type=int, default=200_000)
-    parser.add_argument("--skip-final-eval", action="store_true")
-    return parser
+    args = parser.parse_args()
 
-
-def main() -> None:
-    args = build_parser().parse_args()
     seed_everything(args.seed)
     device = pick_device() if args.device == "auto" else args.device
     run_dir = Path(args.run_dir)
@@ -226,19 +187,24 @@ def main() -> None:
     with (run_dir / "run_config.json").open("w") as handle:
         json.dump(vars(args), handle, indent=2)
     with (run_dir / "metrics.csv").open("w", newline="") as handle:
-        csv.DictWriter(handle, fieldnames=METRIC_FIELDS).writeheader()
+        csv.DictWriter(
+            handle,
+            fieldnames=[
+                "episode", "train_reward", "validation_reward",
+                "validation_completed", "validation_completed_value",
+                "best_score", "loss", "td_residual_variance",
+            ],
+        ).writeheader()
 
     global_step = 0
     best_score = -float("inf")
-    best_episode = 0
-    last_stats: dict[str, float] = {}
-
     for episode in range(1, args.episodes + 1):
         obs, info = env.reset()
         if isinstance(agent, BDQNAgent):
             agent.resample_policy()
         done = False
         episode_reward = 0.0
+        last_stats: dict[str, float] = {}
         while not done:
             mask = env.action_mask()
             if isinstance(agent, BDQNAgent):
@@ -272,75 +238,45 @@ def main() -> None:
             args.validation_episodes,
             sampled=False,
         )
-        current_score = score(validation, args.max_steps)
+        current_score = score(validation)
         if current_score > best_score:
             best_score = current_score
-            best_episode = episode
             agent.save(str(run_dir / "best.pt"))
         agent.save(str(run_dir / "latest.pt"))
-
-        row = {
-            "episode": episode,
-            "global_step": global_step,
-            "train_reward": episode_reward,
-            "train_detected": info.get("detected", np.nan),
-            "train_completed": info.get("completed", np.nan),
-            "train_completed_value": info.get("completed_value", np.nan),
-            "validation_reward": validation.get("reward_mean", np.nan),
-            "validation_reward_std": validation.get("reward_std", np.nan),
-            "validation_detected": validation.get("detected_mean", np.nan),
-            "validation_completed": validation.get("completed_mean", np.nan),
-            "validation_completed_value": validation.get("completed_value_mean", np.nan),
-            "validation_coverage": validation.get("sensor_coverage_ratio_mean", np.nan),
-            "validation_episode_length": validation.get("episode_length_mean", np.nan),
-            "validation_first_detection": validation.get("first_detection_step_mean", np.nan),
-            "validation_first_completion": validation.get("first_completion_step_mean", np.nan),
-            "validation_stay": validation.get("stay_ratio", np.nan),
-            "validation_boundary": validation.get("boundary_hit_ratio", np.nan),
-            "validation_revisit": validation.get("revisit_ratio", np.nan),
-            "validation_sensor_revisit": validation.get("sensor_revisit_ratio", np.nan),
-            "validation_new_observed_per_step": validation.get("new_observed_cells_per_step", np.nan),
-            "validation_tracking_progress": validation.get("tracking_progress_ratio", np.nan),
-            "best_score": best_score,
-            **{field: last_stats.get(field, np.nan) for field in METRIC_FIELDS if field in last_stats},
-        }
         with (run_dir / "metrics.csv").open("a", newline="") as handle:
-            csv.DictWriter(handle, fieldnames=METRIC_FIELDS, extrasaction="ignore").writerow(row)
-
+            csv.DictWriter(
+                handle,
+                fieldnames=[
+                    "episode", "train_reward", "validation_reward",
+                    "validation_completed", "validation_completed_value",
+                    "best_score", "loss", "td_residual_variance",
+                ],
+            ).writerow(
+                {
+                    "episode": episode,
+                    "train_reward": episode_reward,
+                    "validation_reward": validation["reward_mean"],
+                    "validation_completed": validation["completed_mean"],
+                    "validation_completed_value": validation["completed_value_mean"],
+                    "best_score": best_score,
+                    "loss": last_stats.get("loss", np.nan),
+                    "td_residual_variance": last_stats.get("td_residual_variance", np.nan),
+                }
+            )
         print(
-            f"episode={episode} train_reward={episode_reward:.3f} "
-            f"val_reward={float(validation.get('reward_mean', np.nan)):.3f} "
-            f"val_completed={float(validation.get('completed_mean', np.nan)):.3f} "
-            f"coverage={float(validation.get('sensor_coverage_ratio_mean', np.nan)):.3f} "
-            f"loss={float(last_stats.get('loss', np.nan)):.4f}"
+            f"episode={episode} reward={episode_reward:.3f} "
+            f"val_completed={validation['completed_mean']:.3f}"
         )
 
-    if best_episode == 0:
-        agent.save(str(run_dir / "best.pt"))
-    with (run_dir / "training_status.json").open("w") as handle:
-        json.dump(
-            {
-                "completed": True,
-                "best_episode": best_episode,
-                "best_score": best_score,
-                "global_step": global_step,
-            },
-            handle,
-            indent=2,
-        )
-
-    if args.skip_final_eval:
-        return
     agent.load(str(run_dir / "best.pt"))
-    output = {
-        "posterior_mean": evaluate(
-            agent,
-            args,
-            args.final_test_seed_base,
-            args.final_test_episodes,
-            sampled=False,
-        )
-    }
+    final_mean = evaluate(
+        agent,
+        args,
+        args.final_test_seed_base,
+        args.final_test_episodes,
+        sampled=False,
+    )
+    output = {"posterior_mean": final_mean}
     if isinstance(agent, BDQNAgent):
         output["posterior_sample"] = evaluate(
             agent,
