@@ -1,0 +1,8 @@
+episode=50 train_reward=-11.617 val_reward=-8.416 val_completed=0.120 coverage=0.549 collision=0.149 loss=0.2462
+episode=100 train_reward=-5.555 val_reward=-5.871 val_completed=0.280 coverage=0.503 collision=0.056 loss=0.0693
+episode=150 train_reward=-7.579 val_reward=-8.313 val_completed=0.270 coverage=0.638 collision=0.115 loss=0.0599
+episode=200 train_reward=-0.917 val_reward=-6.837 val_completed=0.500 coverage=0.653 collision=0.116 loss=0.1504
+episode=250 train_reward=4.596 val_reward=-7.544 val_completed=0.310 coverage=0.596 collision=0.103 loss=0.0719
+episode=300 train_reward=-7.386 val_reward=-6.796 val_completed=0.370 coverage=0.550 collision=0.062 loss=0.0605
+episode=350 train_reward=-8.951 val_reward=-6.713 val_completed=0.340 coverage=0.466 collision=0.093 loss=0.1959
+episode=400 train_reward=-3.772 val_reward=-5.920 val_completed=0.390 coverage=0.532 collision=0.058 loss=0.1231

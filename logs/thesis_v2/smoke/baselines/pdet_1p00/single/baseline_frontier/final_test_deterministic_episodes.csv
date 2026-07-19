@@ -1,0 +1,5 @@
+action_0,action_1,action_2,action_3,action_4,boundary_hits,completed,completed_value,decisions,detected,detected_value,episode,episode_length,first_completion_step,first_detection_step,had_completion,had_detection,new_observed_cells,position_revisit_steps,reward,reward_part_complete,reward_part_potential,reward_part_step,sensor_coverage_ratio,sensor_revisit_steps,tracking_progress_steps,world_seed
+0,0,0,0,0,0,4.0,5.0,149,4.0,5.0,0,149.0,11.0,7.0,1.0,1.0,396,148,9.803750025052533,24.0,-13.451249974947448,-0.7450000000000006,0.9925000071525574,39,12,200000
+0,0,0,0,0,0,4.0,5.0,118,4.0,5.0,1,118.0,16.0,12.0,1.0,1.0,362,117,13.724749979916947,24.0,-9.685250020083052,-0.5900000000000004,0.9075000286102295,19,12,200001
+0,0,0,0,0,0,4.0,5.0,105,4.0,5.0,2,105.0,38.0,34.0,1.0,1.0,360,104,17.921375008020537,24.0,-5.55362499197946,-0.5250000000000004,0.9024999737739563,12,12,200002
+0,0,0,0,0,0,3.0,4.0,150,3.0,4.0,3,150.0,48.0,44.0,1.0,1.0,365,149,7.61125003786753,20.0,-11.63874996213243,-0.7500000000000006,0.9150000214576721,50,9,200003

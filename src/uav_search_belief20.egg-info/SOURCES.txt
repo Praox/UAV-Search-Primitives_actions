@@ -25,6 +25,8 @@ src/uav_search_belief20/envs/thesis_envs.py
 src/uav_search_belief20/experiments/__init__.py
 src/uav_search_belief20/experiments/frozen_single.py
 src/uav_search_belief20/experiments/single_ablation.py
+src/uav_search_belief20/experiments/thesis_automation.py
+src/uav_search_belief20/experiments/thesis_evaluation.py
 src/uav_search_belief20/marl/__init__.py
 src/uav_search_belief20/marl/bayesian_qmix_agent.py
 src/uav_search_belief20/marl/multi_local_baselines.py
@@ -34,4 +36,5 @@ src/uav_search_belief20/marl/qmix_mixer.py
 src/uav_search_belief20/marl/thesis_qmix.py
 src/uav_search_belief20/models/__init__.py
 src/uav_search_belief20/models/networks.py
+tests/test_thesis_automation.py
 tests/test_thesis_corrections.py

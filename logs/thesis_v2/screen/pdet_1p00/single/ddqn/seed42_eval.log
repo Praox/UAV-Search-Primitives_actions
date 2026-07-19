@@ -1,0 +1,2 @@
+[deterministic] reward=-5.385 completed=0.020 coverage=0.481
+Saved runs/thesis_v2/screen/pdet_1p00/single/ddqn/seed42/evaluation/final_test_deterministic_summary.json

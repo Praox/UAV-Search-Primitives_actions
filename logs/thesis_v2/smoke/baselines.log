@@ -1,0 +1,10 @@
+[single random pD=1.00] reward=-3.318 completed=0.000
+Saved logs/thesis_v2/smoke/baselines/pdet_1p00/single/baseline_random/final_test_deterministic_summary.json
+[single frontier pD=1.00] reward=12.265 completed=3.750
+Saved logs/thesis_v2/smoke/baselines/pdet_1p00/single/baseline_frontier/final_test_deterministic_summary.json
+[single oracle pD=1.00] reward=20.696 completed=4.000
+Saved logs/thesis_v2/smoke/baselines/pdet_1p00/single/baseline_oracle/final_test_deterministic_summary.json
+[multi random pD=1.00] reward=-6.828 completed=0.000
+Saved logs/thesis_v2/smoke/baselines/pdet_1p00/multi/baseline_random/final_test_deterministic_summary.json
+[multi local_frontier pD=1.00] reward=17.015 completed=4.000
+Saved logs/thesis_v2/smoke/baselines/pdet_1p00/multi/baseline_local_frontier/final_test_deterministic_summary.json

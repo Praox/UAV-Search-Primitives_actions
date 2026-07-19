@@ -1,0 +1,2 @@
+episode=3 train_reward=0.931 val_reward=-1.820 val_completed=0.500 coverage=0.631 collision=0.000 loss=0.1757
+episode=6 train_reward=-10.630 val_reward=-10.920 val_completed=0.000 coverage=0.449 collision=0.289 loss=0.5225
