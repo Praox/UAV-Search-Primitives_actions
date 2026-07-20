@@ -22,7 +22,7 @@ PRESETS = {
     "fixed": {
         "seeds": [42, 43, 44, 45, 46],
         "probabilities": [1.0],
-        "train_episodes": 1000,
+        "train_episodes": 400,
         "validation_episodes": 1,
         "final_test_episodes": 100,
         "eval_every": 50,

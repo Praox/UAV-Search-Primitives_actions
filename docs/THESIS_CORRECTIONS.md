@@ -1169,6 +1169,42 @@ relatively more useful under noisy sensing.
 Primary metrics are completed targets, completed value, first completion time, team
 coverage, overlap, collision, detection-to-completion ratio and seed variance. Shaped
 reward is secondary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Environnement fixe pour les scripts thesis-v2
 
 Ce correctif vise exclusivement le pipeline canonique de la branche `correction` :
