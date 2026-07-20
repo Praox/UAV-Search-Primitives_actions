@@ -45,8 +45,8 @@ PRESETS = {
         ],
     },
     "confirm": {
-        "seeds": list(range(42, 49)),
-        "probabilities": [0.7],
+        "seeds": list(range(45, 49)),
+        "probabilities": [1.0, 0.7, 0.5],
         "train_episodes": 1000,
         "validation_episodes": 100,
         "final_test_episodes": 1000,
