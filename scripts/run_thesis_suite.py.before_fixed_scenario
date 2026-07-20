@@ -16,26 +16,6 @@ from uav_search_belief20.experiments.thesis_automation import (
 
 
 PRESETS = {
-    # Diagnostic overfitting test: every learned policy sees exactly one world.
-    # Repeated final episodes are useful for random baselines and posterior samples;
-    # deterministic learned policies should be aggregated over training seeds.
-    "fixed": {
-        "seeds": [42, 43, 44, 45, 46],
-        "probabilities": [1.0],
-        "train_episodes": 1000,
-        "validation_episodes": 1,
-        "final_test_episodes": 100,
-        "eval_every": 50,
-        "learning_starts": 1000,
-        "single_algos": ["ddqn", "bdqn"],
-        "multi_algos": [
-            "shared_ddqn",
-            "shared_bdqn",
-            "qmix_ddqn",
-            "bayes_qmix_shared",
-            "bayes_qmix_independent",
-        ],
-    },
     "smoke": {
         "seeds": [42],
         "probabilities": [1.0],
@@ -103,7 +83,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "mode",
-        choices=["fixed", "smoke", "screen", "confirm", "custom", "evaluate", "aggregate", "status"],
+        choices=["smoke", "screen", "confirm", "custom", "evaluate", "aggregate", "status"],
     )
     parser.add_argument("--stage", default="", help="Output stage name; defaults to the mode.")
     parser.add_argument("--scope", choices=["single", "multi", "both"], default="both")
@@ -130,17 +110,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-analysis", action="store_true")
 
     # Environment and objective.
-    parser.add_argument(
-        "--fixed-scenario",
-        action="store_true",
-        help="Train, validate and test on one exactly repeated world.",
-    )
-    parser.add_argument(
-        "--scenario-seed",
-        type=int,
-        default=12_345,
-        help="World seed used by --fixed-scenario.",
-    )
     parser.add_argument("--n-agents", type=int, default=3)
     parser.add_argument("--grid-size", type=int, default=20)
     parser.add_argument("--n-value1-targets", type=int, default=3)
@@ -190,10 +159,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _resolved(cli) -> dict:
-    default_stage = cli.mode
-    if cli.fixed_scenario:
-        default_stage = f"{cli.mode}_scenario{int(cli.scenario_seed)}"
-
     preset_name = (
         cli.mode
         if cli.mode in PRESETS
@@ -201,9 +166,7 @@ def _resolved(cli) -> dict:
     )
     preset = PRESETS[preset_name]
     return {
-        "stage": cli.stage or default_stage,
-        "fixed_scenario": bool(cli.fixed_scenario),
-        "scenario_seed": int(cli.scenario_seed),
+        "stage": cli.stage or cli.mode,
         "seeds": parse_seeds(cli.seeds) if cli.seeds else list(preset["seeds"]),
         "probabilities": (
             parse_probabilities(cli.probabilities)
@@ -307,10 +270,6 @@ def _common_env_args(cli, probability: float) -> list[str]:
         "--detection-potential-scale", str(cli.detection_potential_scale),
         "--progress-potential-scale", str(cli.progress_potential_scale),
     ]
-    if cli.fixed_scenario:
-        args.extend(
-            ["--fixed-scenario", "--scenario-seed", str(cli.scenario_seed)]
-        )
     return args
 
 
@@ -518,10 +477,6 @@ def _run_baselines(cli, resolved, log_root: Path, manifest: Path) -> bool:
         "--progress-potential-scale", str(cli.progress_potential_scale),
         "--gamma", str(cli.gamma),
     ]
-    if cli.fixed_scenario:
-        command.extend(
-            ["--fixed-scenario", "--scenario-seed", str(cli.scenario_seed)]
-        )
     if cli.include_agent_id_map:
         command.append("--include-agent-id-map")
     return run_command(
@@ -578,8 +533,6 @@ def _analysis(cli, resolved, run_root: Path, log_root: Path, manifest: Path) -> 
 
 def main() -> None:
     cli = build_parser().parse_args()
-    if cli.mode == "fixed":
-        cli.fixed_scenario = True
     resolved = _resolved(cli)
     run_root = Path(cli.run_root)
     log_root = Path(cli.log_root)

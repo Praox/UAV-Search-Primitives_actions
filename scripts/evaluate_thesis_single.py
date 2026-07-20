@@ -75,6 +75,9 @@ def main() -> None:
     if algo not in {"ddqn", "bdqn"}:
         raise ValueError(f"run_config.json does not describe a thesis single-UAV run: algo={algo!r}")
 
+    fixed_scenario = bool(config.get("fixed_scenario", False))
+    scenario_seed = int(config.get("scenario_seed", config["seed"]))
+
     checkpoint = resolve_checkpoint(run_dir, cli.checkpoint)
     device = pick_device() if cli.device == "auto" else cli.device
     output_dir = Path(cli.output_dir) if cli.output_dir else run_dir / "evaluation"
@@ -87,6 +90,8 @@ def main() -> None:
         "training_seed": int(config["seed"]),
         "detection_probability": float(config["detection_probability"]),
         "checkpoint": str(checkpoint),
+        "fixed_scenario": fixed_scenario,
+        "scenario_seed": scenario_seed if fixed_scenario else None,
         "evaluations": [],
     }
 
@@ -132,6 +137,8 @@ def main() -> None:
             "eval_seed_base": int(cli.eval_seed_base),
             "episodes": int(cli.episodes),
             "episode_csv": str(episode_path),
+            "fixed_scenario": fixed_scenario,
+            "scenario_seed": scenario_seed if fixed_scenario else None,
             "summary": summary,
         }
         if isinstance(agent, BDQNAgent):

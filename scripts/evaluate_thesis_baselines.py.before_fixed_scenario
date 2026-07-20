@@ -38,17 +38,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eval-seed-base", type=int, default=200_000)
     parser.add_argument("--policy-seed", type=int, default=999)
     parser.add_argument("--output-root", default="logs/thesis_v2/baselines")
-    parser.add_argument(
-        "--fixed-scenario",
-        action="store_true",
-        help="Evaluate every baseline rollout on the exact same world.",
-    )
-    parser.add_argument(
-        "--scenario-seed",
-        type=int,
-        default=12_345,
-        help="World seed used by --fixed-scenario.",
-    )
 
     parser.add_argument("--n-agents", type=int, default=3)
     parser.add_argument("--grid-size", type=int, default=20)
@@ -73,8 +62,6 @@ def build_parser() -> argparse.ArgumentParser:
 def _base_namespace(cli, probability: float) -> SimpleNamespace:
     return SimpleNamespace(
         seed=cli.policy_seed,
-        fixed_scenario=bool(cli.fixed_scenario),
-        scenario_seed=int(cli.scenario_seed),
         n_agents=cli.n_agents,
         grid_size=cli.grid_size,
         n_value1_targets=cli.n_value1_targets,
@@ -126,8 +113,6 @@ def _save_result(
             "policy_mode": "deterministic",
             "eval_seed_base": int(cli.eval_seed_base),
             "episodes": int(cli.episodes),
-            "fixed_scenario": bool(cli.fixed_scenario),
-            "scenario_seed": int(cli.scenario_seed) if cli.fixed_scenario else None,
             "episode_csv": str(episode_path),
             "summary": summary,
         },

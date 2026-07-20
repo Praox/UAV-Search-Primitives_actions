@@ -51,6 +51,11 @@ METRIC_FIELDS = [
 
 
 def make_env(args, seed: int) -> ThesisPrimitiveSearchEnv:
+    fixed_scenario = bool(getattr(args, "fixed_scenario", False))
+    scenario_seed = int(getattr(args, "scenario_seed", seed))
+    # The learner seed still controls initialization, replay and exploration.
+    env_seed = scenario_seed if fixed_scenario else int(seed)
+
     return ThesisPrimitiveSearchEnv(
         ThesisEnvConfig(
             grid_size=args.grid_size,
@@ -61,7 +66,9 @@ def make_env(args, seed: int) -> ThesisPrimitiveSearchEnv:
             track_radius=args.track_radius,
             track_required=args.track_required,
             max_steps=args.max_steps,
-            seed=int(seed),
+            seed=env_seed,
+            fixed_scenario=fixed_scenario,
+            scenario_seed=scenario_seed,
             reward_version=f"thesis_{args.reward_mode}",
             ablation_name="thesis_v2",
             use_boundary_action_mask=True,
@@ -172,6 +179,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--track-required", type=int, default=3)
     parser.add_argument("--track-progress-decay", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=150)
+    parser.add_argument(
+        "--fixed-scenario",
+        action="store_true",
+        help=(
+            "Reuse the exact same UAV spawn, targets and simulator RNG "
+            "sequence at every reset."
+        ),
+    )
+    parser.add_argument(
+        "--scenario-seed",
+        type=int,
+        default=12_345,
+        help="World seed used by --fixed-scenario; independent of --seed.",
+    )
     parser.add_argument("--reward-mode", choices=["legacy", "task_potential"], default="task_potential")
     parser.add_argument("--coverage-potential-scale", type=float, default=5.0)
     parser.add_argument("--detection-potential-scale", type=float, default=1.0)

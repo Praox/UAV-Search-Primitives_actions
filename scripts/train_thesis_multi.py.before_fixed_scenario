@@ -72,11 +72,6 @@ METRIC_FIELDS = [
 
 
 def make_env(args, seed: int) -> ThesisMultiDroneLocalMemoryEnv:
-    fixed_scenario = bool(getattr(args, "fixed_scenario", False))
-    scenario_seed = int(getattr(args, "scenario_seed", seed))
-    # The learner seed still controls initialization, replay and exploration.
-    env_seed = scenario_seed if fixed_scenario else int(seed)
-
     return ThesisMultiDroneLocalMemoryEnv(
         ThesisMultiEnvConfig(
             grid_size=args.grid_size,
@@ -90,9 +85,7 @@ def make_env(args, seed: int) -> ThesisMultiDroneLocalMemoryEnv:
             track_required=args.track_required,
             track_progress_decay=args.track_progress_decay,
             max_steps=args.max_steps,
-            seed=env_seed,
-            fixed_scenario=fixed_scenario,
-            scenario_seed=scenario_seed,
+            seed=int(seed),
             reward_version=f"thesis_multi_{args.reward_mode}",
             use_boundary_action_mask=True,
             include_agent_id_map=args.include_agent_id_map,
@@ -298,20 +291,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--track-required", type=int, default=3)
     parser.add_argument("--track-progress-decay", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=150)
-    parser.add_argument(
-        "--fixed-scenario",
-        action="store_true",
-        help=(
-            "Reuse the exact same UAV spawns, targets and simulator RNG "
-            "sequence at every reset."
-        ),
-    )
-    parser.add_argument(
-        "--scenario-seed",
-        type=int,
-        default=12_345,
-        help="World seed used by --fixed-scenario; independent of --seed.",
-    )
     parser.add_argument("--include-agent-id-map", action="store_true")
     parser.add_argument("--global-state-mode", choices=["privileged_truth", "memory_union"], default="memory_union")
     parser.add_argument("--reward-mode", choices=["legacy", "task_potential"], default="task_potential")

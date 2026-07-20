@@ -32,11 +32,6 @@ class ThesisEnvConfig(EnvConfig):
     progress_potential_scale: float = 1.0
     shaping_gamma: float = 0.99
 
-    # Diagnostic overfitting mode. Every reset recreates the exact same
-    # spawn, target layout and simulator random-number sequence.
-    fixed_scenario: bool = False
-    scenario_seed: int = 12_345
-
 
 @dataclass
 class ThesisMultiEnvConfig(MultiDroneLocalEnvConfig):
@@ -47,11 +42,6 @@ class ThesisMultiEnvConfig(MultiDroneLocalEnvConfig):
     detection_potential_scale: float = 1.0
     progress_potential_scale: float = 1.0
     shaping_gamma: float = 0.99
-
-    # Diagnostic overfitting mode. Every reset recreates the exact same
-    # multi-UAV spawns, target layout and simulator RNG sequence.
-    fixed_scenario: bool = False
-    scenario_seed: int = 12_345
 
 
 class _TaskPotentialMixin:
@@ -116,13 +106,6 @@ class ThesisPrimitiveSearchEnv(_TaskPotentialMixin, PrimitiveSearchEnv):
         if config.track_progress_decay < 0:
             raise ValueError("track_progress_decay must be non-negative")
         super().__init__(config)
-
-    def reset(self):
-        if self.cfg.fixed_scenario:
-            # PrimitiveSearchEnv.reset() draws the spawn and target positions
-            # from self.rng. Rewinding it recreates the complete episode.
-            self.rng = np.random.default_rng(int(self.cfg.scenario_seed))
-        return super().reset()
 
     def step(self, action: int):
         potential_before = self._potential()
@@ -307,13 +290,6 @@ class ThesisMultiDroneLocalMemoryEnv(
         if config.track_progress_decay < 0:
             raise ValueError("track_progress_decay must be non-negative")
         super().__init__(config)
-
-    def reset(self):
-        if self.cfg.fixed_scenario:
-            # MultiDroneLocalMemoryEnv.reset() draws every UAV and target
-            # position from self.rng, so this recreates the complete episode.
-            self.rng = np.random.default_rng(int(self.cfg.scenario_seed))
-        return super().reset()
 
     def step(self, actions):
         potential_before = self._potential()

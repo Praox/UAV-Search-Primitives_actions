@@ -5,12 +5,6 @@ import torch
 
 from uav_search_belief20.agents.dqn_agent import DQNAgent, DQNConfig
 from uav_search_belief20.agents.replay_buffer import ReplayBuffer
-from uav_search_belief20.envs.thesis_envs import (
-    ThesisEnvConfig,
-    ThesisMultiDroneLocalMemoryEnv,
-    ThesisMultiEnvConfig,
-    ThesisPrimitiveSearchEnv,
-)
 from uav_search_belief20.models.networks import QNetwork
 
 
@@ -79,46 +73,3 @@ def test_masked_argmax_excludes_invalid_action() -> None:
     masks = torch.tensor([[True, False, True]])
     selected = DQNAgent._masked_argmax(q_values, masks)
     assert selected.item() == 2
-
-
-
-def test_fixed_single_scenario_rewinds_layout_and_rng() -> None:
-    env = ThesisPrimitiveSearchEnv(
-        ThesisEnvConfig(
-            fixed_scenario=True,
-            scenario_seed=1234,
-            detection_probability=0.7,
-            use_boundary_action_mask=True,
-            include_track_progress_map=True,
-        )
-    )
-    env.reset()
-    first_spawn = env.drone_pos.copy()
-    first_targets = env.target_pos.copy()
-    first_rng_tail = env.rng.random(8)
-
-    env.reset()
-    assert np.array_equal(env.drone_pos, first_spawn)
-    assert np.array_equal(env.target_pos, first_targets)
-    assert np.array_equal(env.rng.random(8), first_rng_tail)
-
-
-def test_fixed_multi_scenario_rewinds_layout_and_rng() -> None:
-    env = ThesisMultiDroneLocalMemoryEnv(
-        ThesisMultiEnvConfig(
-            n_agents=3,
-            fixed_scenario=True,
-            scenario_seed=5678,
-            detection_probability=0.7,
-            global_state_mode="memory_union",
-        )
-    )
-    env.reset()
-    first_spawns = env.drone_pos.copy()
-    first_targets = env.target_pos.copy()
-    first_rng_tail = env.rng.random(8)
-
-    env.reset()
-    assert np.array_equal(env.drone_pos, first_spawns)
-    assert np.array_equal(env.target_pos, first_targets)
-    assert np.array_equal(env.rng.random(8), first_rng_tail)
