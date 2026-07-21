@@ -6,23 +6,11 @@
 
 ## Alertes
 
-- **bayes_qmix_independent seed 43 pD=1.0**: régression tardive: completed final=3.000, max=4.000; fort écart sampled-mean sur completion: -1.200
-- **bayes_qmix_independent seed 44 pD=1.0**: régression tardive: completed final=3.000, max=4.000; fort écart sampled-mean sur completion: -2.320
-- **bayes_qmix_shared seed 44 pD=1.0**: fort écart sampled-mean sur coverage: -0.222
-- **bayes_qmix_shared seed 45 pD=1.0**: fort écart sampled-mean sur coverage: -0.182
-- **qmix_ddqn seed 43 pD=1.0**: régression tardive: completed final=2.000, max=4.000; collision finale élevée: 0.302
-- **shared_bdqn seed 42 pD=1.0**: régression tardive: completed final=1.000, max=2.000; fort écart sampled-mean sur completion: -0.700
-- **shared_bdqn seed 43 pD=1.0**: fort écart sampled-mean sur completion: -2.620
-- **shared_bdqn seed 44 pD=1.0**: régression tardive: completed final=2.000, max=3.000; fort écart sampled-mean sur completion: -1.140
-- **shared_bdqn seed 45 pD=1.0**: régression tardive: completed final=2.000, max=3.000; collision finale élevée: 0.400; fort écart sampled-mean sur completion: -0.910
-- **shared_ddqn seed 42 pD=1.0**: collision finale élevée: 0.347
-- **shared_ddqn seed 43 pD=1.0**: collision finale élevée: 0.448
-- **shared_ddqn seed 46 pD=1.0**: régression tardive: completed final=2.000, max=3.000
-- **bdqn seed 43 pD=1.0**: régression tardive: completed final=1.000, max=2.000
-- **bdqn seed 44 pD=1.0**: régression tardive: completed final=0.000, max=2.000; fort écart sampled-mean sur completion: -1.160
-- **bdqn seed 45 pD=1.0**: régression tardive: completed final=1.000, max=2.000
-- **ddqn seed 42 pD=1.0**: régression tardive: completed final=1.000, max=2.000
-- **ddqn seed 43 pD=1.0**: régression tardive: completed final=2.000, max=3.000
+- **shared_bdqn seed 42 pD=1.0**: régression tardive: completed final=3.000, max=4.000; fort écart sampled-mean sur completion: -1.200; fort écart sampled-mean sur coverage: +0.277
+- **shared_bdqn seed 43 pD=1.0**: fort écart sampled-mean sur completion: -0.900; fort écart sampled-mean sur coverage: +0.229
+- **shared_bdqn seed 44 pD=1.0**: régression tardive: completed final=2.000, max=3.000; fort écart sampled-mean sur coverage: -0.163
+- **shared_bdqn seed 46 pD=1.0**: fort écart sampled-mean sur coverage: +0.184
+- **bdqn seed 42 pD=1.0**: régression tardive: completed final=2.000, max=3.000; fort écart sampled-mean sur completion: -0.890; fort écart sampled-mean sur coverage: -0.153
 
 ## Interprétation
 

@@ -22,20 +22,30 @@ PRESETS = {
     "fixed": {
         "seeds": [42, 43, 44, 45, 46],
         "probabilities": [1.0],
-        "train_episodes": 400,
+        "train_episodes": 4000,
         "validation_episodes": 1,
         "final_test_episodes": 100,
         "eval_every": 50,
         "learning_starts": 1000,
         "single_algos": ["ddqn", "bdqn"],
-        "multi_algos": [
-            "shared_ddqn",
+        "multi_algos": [            "shared_ddqn",
             "shared_bdqn",
             "qmix_ddqn",
             "bayes_qmix_shared",
             "bayes_qmix_independent",
         ],
+        
     },
+
+        """        "multi_algos": [
+            "shared_ddqn",
+            "shared_bdqn",
+            "qmix_ddqn",
+            "bayes_qmix_shared",
+            "bayes_qmix_independent",
+            ],"""
+
+
     "smoke": {
         "seeds": [42],
         "probabilities": [1.0],

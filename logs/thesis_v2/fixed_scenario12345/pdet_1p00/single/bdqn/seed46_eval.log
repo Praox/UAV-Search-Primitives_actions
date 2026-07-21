@@ -1,4 +1,4 @@
-[posterior_mean] reward=7.277 completed=2.000 coverage=0.240
+[posterior_mean] reward=21.178 completed=4.000 coverage=0.295
 Saved runs/thesis_v2/fixed_scenario12345/pdet_1p00/single/bdqn/seed46/evaluation/final_test_posterior_mean_summary.json
-[posterior_sample] reward=6.633 completed=1.970 coverage=0.303
+[posterior_sample] reward=17.776 completed=3.700 coverage=0.319
 Saved runs/thesis_v2/fixed_scenario12345/pdet_1p00/single/bdqn/seed46/evaluation/final_test_posterior_sample_summary.json

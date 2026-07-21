@@ -1,4 +1,4 @@
-[posterior_mean] reward=-5.409 completed=3.000 coverage=0.635 collision=0.093
+[posterior_mean] reward=22.335 completed=4.000 coverage=0.428 collision=0.000
 Saved runs/thesis_v2/fixed_scenario12345/pdet_1p00/multi/shared_bdqn/seed45/evaluation/final_test_posterior_mean_summary.json
-[posterior_sample_shared] reward=-6.288 completed=2.090 coverage=0.620 collision=0.104
+[posterior_sample_shared] reward=21.445 completed=3.970 coverage=0.406 collision=0.025
 Saved runs/thesis_v2/fixed_scenario12345/pdet_1p00/multi/shared_bdqn/seed45/evaluation/final_test_posterior_sample_shared_summary.json
