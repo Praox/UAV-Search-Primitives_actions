@@ -1,0 +1,6 @@
+[posterior_mean] reward=-8.213 completed=0.355 coverage=0.611 collision=0.070
+Saved runs/thesis_v2/confirm/pdet_1p00/multi/bayes_qmix_independent/seed44/evaluation/final_test_posterior_mean_summary.json
+[posterior_sample_shared] reward=-8.636 completed=0.301 coverage=0.546 collision=0.134
+Saved runs/thesis_v2/confirm/pdet_1p00/multi/bayes_qmix_independent/seed44/evaluation/final_test_posterior_sample_shared_summary.json
+[posterior_sample_independent] reward=-8.536 completed=0.284 coverage=0.571 collision=0.087
+Saved runs/thesis_v2/confirm/pdet_1p00/multi/bayes_qmix_independent/seed44/evaluation/final_test_posterior_sample_independent_summary.json

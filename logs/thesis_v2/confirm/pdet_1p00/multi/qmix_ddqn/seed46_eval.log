@@ -1,0 +1,2 @@
+[deterministic] reward=-8.364 completed=0.315 coverage=0.589 collision=0.109
+Saved runs/thesis_v2/confirm/pdet_1p00/multi/qmix_ddqn/seed46/evaluation/final_test_deterministic_summary.json
