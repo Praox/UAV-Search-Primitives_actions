@@ -1,0 +1,20 @@
+[single random pD=0.70] reward=-3.122 completed=0.055
+Saved logs/thesis_v2/confirm/baselines/pdet_0p70/single/baseline_random/final_test_deterministic_summary.json
+[single frontier pD=0.70] reward=13.047 completed=3.660
+Saved logs/thesis_v2/confirm/baselines/pdet_0p70/single/baseline_frontier/final_test_deterministic_summary.json
+[single oracle pD=0.70] reward=20.549 completed=4.000
+Saved logs/thesis_v2/confirm/baselines/pdet_0p70/single/baseline_oracle/final_test_deterministic_summary.json
+[multi random pD=0.70] reward=-7.980 completed=0.149
+Saved logs/thesis_v2/confirm/baselines/pdet_0p70/multi/baseline_random/final_test_deterministic_summary.json
+[multi local_frontier pD=0.70] reward=10.696 completed=3.584
+Saved logs/thesis_v2/confirm/baselines/pdet_0p70/multi/baseline_local_frontier/final_test_deterministic_summary.json
+[single random pD=0.50] reward=-3.059 completed=0.055
+Saved logs/thesis_v2/confirm/baselines/pdet_0p50/single/baseline_random/final_test_deterministic_summary.json
+[single frontier pD=0.50] reward=11.179 completed=3.458
+Saved logs/thesis_v2/confirm/baselines/pdet_0p50/single/baseline_frontier/final_test_deterministic_summary.json
+[single oracle pD=0.50] reward=20.528 completed=4.000
+Saved logs/thesis_v2/confirm/baselines/pdet_0p50/single/baseline_oracle/final_test_deterministic_summary.json
+[multi random pD=0.50] reward=-7.831 completed=0.149
+Saved logs/thesis_v2/confirm/baselines/pdet_0p50/multi/baseline_random/final_test_deterministic_summary.json
+[multi local_frontier pD=0.50] reward=8.359 completed=3.438
+Saved logs/thesis_v2/confirm/baselines/pdet_0p50/multi/baseline_local_frontier/final_test_deterministic_summary.json
