@@ -1,0 +1,77 @@
+{
+  "algo": "bayes_qmix_independent",
+  "run_dir": "runs/thesis_v2/fixed_scenario12345/pdet_1p00/multi/bayes_qmix_independent/seed46",
+  "checkpoint": "runs/thesis_v2/fixed_scenario12345/pdet_1p00/multi/bayes_qmix_independent/seed46/best.pt",
+  "training_seed": 46,
+  "fixed_scenario": true,
+  "scenario_seed": 12345,
+  "posterior_seed": 7,
+  "initial_drone_positions": [
+    [
+      13,
+      4
+    ],
+    [
+      15,
+      6
+    ],
+    [
+      4,
+      15
+    ]
+  ],
+  "target_positions": [
+    [
+      12,
+      13
+    ],
+    [
+      19,
+      7
+    ],
+    [
+      16,
+      6
+    ],
+    [
+      11,
+      11
+    ]
+  ],
+  "target_values": [
+    1,
+    1,
+    1,
+    2
+  ],
+  "episode_steps": 16,
+  "cumulative_reward": 22.77875000083819,
+  "detected": 4,
+  "completed": 4,
+  "completed_flags": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "final_track_progress": [
+    3,
+    3,
+    3,
+    3
+  ],
+  "final_drone_positions": [
+    [
+      7,
+      8
+    ],
+    [
+      19,
+      8
+    ],
+    [
+      11,
+      12
+    ]
+  ]
+}
