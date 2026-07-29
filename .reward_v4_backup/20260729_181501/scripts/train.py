@@ -96,9 +96,13 @@ def evaluate_agent(agent, args, episodes: int) -> dict[str, object]:
     )
 
 
-def checkpoint_score(metrics: dict) -> float:
-    """Select best.pt using the exact evaluation reward only."""
-    return float(metrics["reward_mean"])
+def checkpoint_score(metrics: dict[str, object]) -> float:
+    return float(
+        metrics["reward_mean"]
+        + 3.0 * metrics["completed_mean"]
+        + 1.5 * metrics["completed_value_mean"]
+        + 0.5 * metrics["detected_mean"]
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -114,7 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--track-radius", type=int, default=1)
     parser.add_argument("--track-required", type=int, default=3)
     parser.add_argument("--max-steps", type=int, default=150)
-    parser.add_argument("--reward-version", type=str, default="v4_potential_simple")
+    parser.add_argument("--reward-version", type=str, default="v3_frontier")
     parser.add_argument(
         "--track-progress-scale",
         type=float,

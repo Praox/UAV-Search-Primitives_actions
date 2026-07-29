@@ -189,8 +189,18 @@ def evaluate(agent, args, algo: str, seed: int, episodes: int = 1000) -> dict:
 
 
 def checkpoint_score(metrics: dict) -> float:
-    """Select best.pt using the exact evaluation reward only."""
-    return float(metrics["reward_mean"])
+    """Checkpoint selection score.
+
+    The thesis comparison should use the final evaluate metrics, not this score alone.
+    This score intentionally favors actually completing targets.
+    """
+    return (
+        metrics["reward_mean"]
+        + 3.0 * metrics["completed_mean"]
+        + 1.5 * metrics["completed_value_mean"]
+        + 0.5 * metrics["detected_mean"]
+        + 0.5 * metrics["sensor_coverage_ratio_mean"]
+    )
 
 
 def train_one_job(args, algo: str, seed: int, run_dir: Path) -> None:
@@ -480,7 +490,7 @@ def main() -> None:
     parser.add_argument("--seed", type=str, default="42", help="'42', '43', '44', '42,43,44', or 'all'")
     parser.add_argument("--episodes", type=int, default=1000)
     parser.add_argument("--final-eval-episodes", type=int, default=1000)
-    parser.add_argument("--reward-version", type=str, default="v4_potential_simple")
+    parser.add_argument("--reward-version", type=str, default="v3_frontier")
     parser.add_argument("--run-root", type=str, default="runs")
     parser.add_argument("--log-root", type=str, default="logs")
 

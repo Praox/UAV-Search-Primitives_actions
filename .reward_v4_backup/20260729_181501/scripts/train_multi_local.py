@@ -211,8 +211,15 @@ def decentralized_actions(
 
 
 def checkpoint_score(metrics: dict) -> float:
-    """Select best.pt using the exact evaluation reward only."""
-    return float(metrics["reward_mean"])
+    return float(
+        metrics["reward_mean"]
+        + 4.0 * metrics["completed_mean"]
+        + 2.0 * metrics["completed_value_mean"]
+        + 0.5 * metrics["detected_mean"]
+        + metrics["team_coverage_ratio_mean"]
+        - 2.0 * metrics["coverage_overlap_ratio_mean"]
+        - 2.0 * metrics["collision_agent_ratio"]
+    )
 
 
 def _common_metadata(learner, args, algo: str) -> dict:

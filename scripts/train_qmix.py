@@ -193,16 +193,8 @@ def evaluate(agent: QMIXAgent, args, algo: str, seed: int, episodes: int = 1000)
 
 
 def checkpoint_score(metrics: dict) -> float:
-    """Selection score for best.pt; final comparisons should use eval metrics."""
-    return (
-        metrics["reward_mean"]
-        + 3.0 * metrics["completed_mean"]
-        + 1.5 * metrics["completed_value_mean"]
-        + 0.5 * metrics["detected_mean"]
-        + 0.5 * metrics["sensor_coverage_ratio_mean"]
-        - 2.0 * metrics["collision_ratio"]
-        - 1.0 * metrics["boundary_hit_ratio"]
-    )
+    """Select best.pt using the exact evaluation reward only."""
+    return float(metrics["reward_mean"])
 
 
 def train_one_job(args, algo: str, seed: int, run_dir: Path) -> None:
@@ -433,7 +425,7 @@ def main() -> None:
     parser.add_argument("--seed", type=str, default="42", help="'42', '43', '44', '42,43,44', or 'all'")
     parser.add_argument("--episodes", type=int, default=1000)
     parser.add_argument("--final-eval-episodes", type=int, default=1000)
-    parser.add_argument("--reward-version", type=str, default="v3_frontier")
+    parser.add_argument("--reward-version", type=str, default="v4_potential_simple")
     parser.add_argument("--run-root", type=str, default="runs")
     parser.add_argument("--log-root", type=str, default="logs")
 

@@ -8,12 +8,6 @@ import numpy as np
 from uav_search_belief20.actions import ACTION_DIM, ACTION_NAMES, MOVES, STAY
 from uav_search_belief20.envs.drone_memory import DroneMemory
 
-from uav_search_belief20.rewards.potential_reward import (
-    PotentialReward,
-    PotentialRewardConfig,
-    PotentialSnapshot,
-)
-
 
 REWARD_PART_KEYS: tuple[str, ...] = (
     "step",
@@ -26,9 +20,6 @@ REWARD_PART_KEYS: tuple[str, ...] = (
     "complete",
     "idle_stay",
     "all_targets",
-    "shaping_coverage",
-    "shaping_detection",
-    "shaping_progress",
 )
 
 
@@ -45,35 +36,29 @@ class EnvConfig:
     seed: int | None = None
 
     # Experiment metadata.
-    reward_version: str = "v4_potential_simple"
+    reward_version: str = "v3_frontier"
     ablation_name: str = "v3"
-
-    # Potential-based shaping: Phi = w_C*C + w_D*D + w_P*P.
-    reward_gamma: float = 0.99
-    coverage_weight: float = 10.0
-    detection_weight: float = 1.0
-    progress_weight: float = 2.0
 
     # Observation/action switches used by the single-UAV ablation study.
     use_boundary_action_mask: bool = False
     include_track_progress_map: bool = False
 
     # Base movement shaping.
-    step_penalty: float = -0.01
-    new_cell_bonus: float = 0.0
+    step_penalty: float = -0.005
+    new_cell_bonus: float = 0.002
     revisit_penalty: float = 0.0
-    new_observed_cell_bonus: float = 0.0
-    new_observed_cell_bonus_cap: float = 0.0
-    boundary_penalty: float = -0.10
-    idle_stay_penalty: float = 0.0
+    new_observed_cell_bonus: float = 0.015
+    new_observed_cell_bonus_cap: float = 0.15
+    boundary_penalty: float = -0.20
+    idle_stay_penalty: float = -0.03
 
     # Task rewards.
-    detect_value1_bonus: float = 0.0
-    detect_value2_bonus: float = 0.0
-    track_progress_value1_bonus: float = 0.0
-    track_progress_value2_bonus: float = 0.0
-    complete_value1_bonus: float = 5.0
-    complete_value2_bonus: float = 10.0
+    detect_value1_bonus: float = 0.60
+    detect_value2_bonus: float = 1.50
+    track_progress_value1_bonus: float = 0.20
+    track_progress_value2_bonus: float = 0.60
+    complete_value1_bonus: float = 4.0
+    complete_value2_bonus: float = 12.0
     all_targets_bonus: float = 5.0
 
     def reward_dict(self) -> dict:
@@ -94,14 +79,6 @@ class PrimitiveSearchEnv:
     def __init__(self, config: EnvConfig | None = None):
         self.cfg = config or EnvConfig()
         self.rng = np.random.default_rng(self.cfg.seed)
-        self.reward_shaper = PotentialReward(
-            PotentialRewardConfig(
-                gamma=self.cfg.reward_gamma,
-                coverage_weight=self.cfg.coverage_weight,
-                detection_weight=self.cfg.detection_weight,
-                progress_weight=self.cfg.progress_weight,
-            )
-        )
         self.observation_channels = 7 if self.cfg.include_track_progress_map else 6
         self.observation_shape = (
             self.observation_channels,
@@ -178,8 +155,6 @@ class PrimitiveSearchEnv:
         if not 0 <= action < self.action_dim:
             raise ValueError(f"Invalid action {action}.")
 
-        potential_before = self._potential_snapshot()
-
         self.t += 1
         self.last_action = action
         self.last_reward_parts = {}
@@ -218,12 +193,6 @@ class PrimitiveSearchEnv:
         terminated = bool(np.all(self.completed))
         if terminated:
             reward += self._add_part("all_targets", self.cfg.all_targets_bonus)
-
-        potential_after = self._potential_snapshot()
-        shaping = self.reward_shaper.shaping(potential_before, potential_after)
-        reward += self._add_part("shaping_coverage", shaping.coverage)
-        reward += self._add_part("shaping_detection", shaping.detection)
-        reward += self._add_part("shaping_progress", shaping.progress)
         truncated = bool(self.t >= self.cfg.max_steps)
         return self._obs(), float(reward), terminated, truncated, self._info()
 
@@ -373,15 +342,6 @@ class PrimitiveSearchEnv:
             ]
         )
         return np.stack(channels, axis=0).astype(np.float32)
-
-    def _potential_snapshot(self) -> PotentialSnapshot:
-        return PotentialSnapshot.from_arrays(
-            coverage_ratio=float(self.memory.visited.mean()),
-            detected=self.detected,
-            track_progress=self.track_progress,
-            target_values=self.target_values,
-            track_required=self.cfg.track_required,
-        )
 
     def _info(self) -> Dict:
         completed_value = int(

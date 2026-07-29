@@ -8,12 +8,6 @@ import numpy as np
 from uav_search_belief20.actions import ACTION_DIM, ACTION_NAMES, MOVES, STAY
 from uav_search_belief20.envs.drone_memory import DroneMemory
 
-from uav_search_belief20.rewards.potential_reward import (
-    PotentialReward,
-    PotentialRewardConfig,
-    PotentialSnapshot,
-)
-
 
 @dataclass
 class MultiDroneEnvConfig:
@@ -40,40 +34,34 @@ class MultiDroneEnvConfig:
     seed: int | None = None
 
     # Explicit label so logs/checkpoints cannot be confused with single-agent v1/v2.
-    reward_version: str = "v4_potential_simple"
-
-    # Potential-based shaping: Phi = w_C*C + w_D*D + w_P*P.
-    reward_gamma: float = 0.99
-    coverage_weight: float = 10.0
-    detection_weight: float = 1.0
-    progress_weight: float = 2.0
+    reward_version: str = "v3_frontier"
 
     # --- Base movement shaping ---
-    step_penalty: float = -0.01
-    collision_penalty: float = -0.05
+    step_penalty: float = -0.005
+    collision_penalty: float = -0.02
 
     # Position-based shaping is kept tiny. The real exploration signal is sensor-based.
-    new_cell_bonus: float = 0.0
+    new_cell_bonus: float = 0.002
     revisit_penalty: float = 0.0
 
     # Frontier/sensor-based exploration signal.
     # Reward = min(cap, bonus * number_of_newly_observed_sensor_cells)
-    new_observed_cell_bonus: float = 0.0
-    new_observed_cell_bonus_cap: float = 0.0
+    new_observed_cell_bonus: float = 0.015
+    new_observed_cell_bonus_cap: float = 0.15
 
     # Avoid degenerate wall-hitting and useless STAY policies.
-    boundary_penalty: float = -0.10
-    idle_stay_penalty: float = 0.0
+    boundary_penalty: float = -0.20
+    idle_stay_penalty: float = -0.03
 
     # --- Task rewards, v3_frontier ---
-    detect_value1_bonus: float = 0.0
-    detect_value2_bonus: float = 0.0
+    detect_value1_bonus: float = 0.60
+    detect_value2_bonus: float = 1.50
 
-    track_progress_value1_bonus: float = 0.0
-    track_progress_value2_bonus: float = 0.0
+    track_progress_value1_bonus: float = 0.20
+    track_progress_value2_bonus: float = 0.60
 
-    complete_value1_bonus: float = 5.0
-    complete_value2_bonus: float = 10.0
+    complete_value1_bonus: float = 4.0
+    complete_value2_bonus: float = 12.0
     all_targets_bonus: float = 5.0
 
     def reward_dict(self) -> dict:
@@ -111,14 +99,6 @@ class MultiDronePrimitiveSearchEnv:
     def __init__(self, config: MultiDroneEnvConfig | None = None):
         self.cfg = config or MultiDroneEnvConfig()
         self.rng = np.random.default_rng(self.cfg.seed)
-        self.reward_shaper = PotentialReward(
-            PotentialRewardConfig(
-                gamma=self.cfg.reward_gamma,
-                coverage_weight=self.cfg.coverage_weight,
-                detection_weight=self.cfg.detection_weight,
-                progress_weight=self.cfg.progress_weight,
-            )
-        )
         self.observation_shape = (
             self.observation_channels,
             self.cfg.grid_size,
@@ -183,8 +163,6 @@ class MultiDronePrimitiveSearchEnv:
         if actions.shape != (self.cfg.n_agents,):
             raise ValueError(f"Expected actions shape {(self.cfg.n_agents,)}, got {actions.shape}.")
 
-        potential_before = self._potential_snapshot()
-
         self.t += 1
         self.last_actions = actions.copy()
         self.last_boundary_hits[:] = False
@@ -195,10 +173,12 @@ class MultiDronePrimitiveSearchEnv:
         self.last_collision_count = 0
         self.last_reward_parts = {}
 
-        reward = self._add_part("step", self.cfg.step_penalty)
+        reward = 0.0
 
         # Move all UAVs first.
         for i, action in enumerate(actions):
+            reward += self._add_part("step", self.cfg.step_penalty)
+
             dr, dc = MOVES[int(action)]
             new_pos = self.drone_pos[i] + np.array([dr, dc], dtype=np.int64)
             clipped = np.clip(new_pos, 0, self.cfg.grid_size - 1)
@@ -239,12 +219,6 @@ class MultiDronePrimitiveSearchEnv:
         terminated = bool(np.all(self.completed))
         if terminated:
             reward += self._add_part("all_targets", self.cfg.all_targets_bonus)
-
-        potential_after = self._potential_snapshot()
-        shaping = self.reward_shaper.shaping(potential_before, potential_after)
-        reward += self._add_part("shaping_coverage", shaping.coverage)
-        reward += self._add_part("shaping_detection", shaping.detection)
-        reward += self._add_part("shaping_progress", shaping.progress)
 
         truncated = bool(self.t >= self.cfg.max_steps)
         return self._obs_all(), float(reward), terminated, truncated, self._info()
@@ -385,15 +359,6 @@ class MultiDronePrimitiveSearchEnv:
     def global_state(self) -> np.ndarray:
         """Compact global state for a future QMIX mixer input."""
         return self._obs_all().reshape(-1).astype(np.float32)
-
-    def _potential_snapshot(self) -> PotentialSnapshot:
-        return PotentialSnapshot.from_arrays(
-            coverage_ratio=float(self.memory.visited.mean()),
-            detected=self.detected,
-            track_progress=self.track_progress,
-            target_values=self.target_values,
-            track_required=self.cfg.track_required,
-        )
 
     def _info(self) -> Dict:
         completed_value = int((self.completed.astype(np.int64) * self.target_values).sum())

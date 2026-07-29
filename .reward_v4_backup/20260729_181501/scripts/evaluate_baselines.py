@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--track-radius", type=int, default=1)
     parser.add_argument("--track-required", type=int, default=3)
     parser.add_argument("--max-steps", type=int, default=150)
-    parser.add_argument("--reward-version", type=str, default="v4_potential_simple")
+    parser.add_argument("--reward-version", type=str, default="v3_frontier")
     parser.add_argument("--track-progress-scale", type=float, default=None)
     parser.add_argument("--output-dir", type=str, default="logs/single_baselines")
     return parser

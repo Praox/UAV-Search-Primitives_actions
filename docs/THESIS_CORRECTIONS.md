@@ -1359,3 +1359,7 @@ Ce test mesure la capacité d'optimisation/mémorisation, pas la généralisatio
 L'étape suivante devra conserver les targets fixes tout en randomisant le spawn,
 puis utiliser plusieurs layouts fixes avec des layouts de test tenus à l'écart.
 
+
+
+
+

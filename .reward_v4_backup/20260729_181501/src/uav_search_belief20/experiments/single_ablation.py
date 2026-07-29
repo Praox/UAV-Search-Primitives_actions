@@ -91,8 +91,8 @@ def build_env_config(
         ablation_name=spec.name,
         use_boundary_action_mask=spec.use_boundary_action_mask,
         include_track_progress_map=spec.include_track_progress_map,
-        track_progress_value1_bonus=0.0,
-        track_progress_value2_bonus=0.0,
+        track_progress_value1_bonus=0.20 * scale,
+        track_progress_value2_bonus=0.60 * scale,
     )
 
 

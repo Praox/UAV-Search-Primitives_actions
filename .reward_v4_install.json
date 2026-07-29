@@ -1,0 +1,171 @@
+{
+  "installed_at": "2026-07-29T18:15:01",
+  "repo": "/Users/remy/Github/uav-search-belief20-primitive",
+  "original_branch": "reward-v4-simple",
+  "safety_branch": null,
+  "backup_root": ".reward_v4_backup/20260729_181501",
+  "backups": [
+    {
+      "path": "src/uav_search_belief20/envs/primitive_search_env.py",
+      "backup": ".reward_v4_backup/20260729_181501/src/uav_search_belief20/envs/primitive_search_env.py"
+    },
+    {
+      "path": "src/uav_search_belief20/envs/multi_drone_env.py",
+      "backup": ".reward_v4_backup/20260729_181501/src/uav_search_belief20/envs/multi_drone_env.py"
+    },
+    {
+      "path": "src/uav_search_belief20/experiments/single_ablation.py",
+      "backup": ".reward_v4_backup/20260729_181501/src/uav_search_belief20/experiments/single_ablation.py"
+    },
+    {
+      "path": "scripts/aggregate_multi_local.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/aggregate_multi_local.py"
+    },
+    {
+      "path": "scripts/aggregate_single_results.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/aggregate_single_results.py"
+    },
+    {
+      "path": "scripts/aggregate_thesis_results.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/aggregate_thesis_results.py"
+    },
+    {
+      "path": "scripts/aggregate_uncertainty_study.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/aggregate_uncertainty_study.py"
+    },
+    {
+      "path": "scripts/evaluate.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/evaluate.py"
+    },
+    {
+      "path": "scripts/evaluate_baselines.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/evaluate_baselines.py"
+    },
+    {
+      "path": "scripts/evaluate_multi_local_baselines.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/evaluate_multi_local_baselines.py"
+    },
+    {
+      "path": "scripts/evaluate_thesis_baselines.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/evaluate_thesis_baselines.py"
+    },
+    {
+      "path": "scripts/evaluate_thesis_multi.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/evaluate_thesis_multi.py"
+    },
+    {
+      "path": "scripts/evaluate_thesis_single.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/evaluate_thesis_single.py"
+    },
+    {
+      "path": "scripts/inspect_thesis_runs.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/inspect_thesis_runs.py"
+    },
+    {
+      "path": "scripts/plot_thesis_results.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/plot_thesis_results.py"
+    },
+    {
+      "path": "scripts/run_multi_local_suite.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/run_multi_local_suite.py"
+    },
+    {
+      "path": "scripts/run_single_suite.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/run_single_suite.py"
+    },
+    {
+      "path": "scripts/run_tests.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/run_tests.py"
+    },
+    {
+      "path": "scripts/run_thesis_suite.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/run_thesis_suite.py"
+    },
+    {
+      "path": "scripts/run_uncertainty_study.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/run_uncertainty_study.py"
+    },
+    {
+      "path": "scripts/smoke_test.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/smoke_test.py"
+    },
+    {
+      "path": "scripts/smoke_test_bayesian_qmix.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/smoke_test_bayesian_qmix.py"
+    },
+    {
+      "path": "scripts/smoke_test_multi_local.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/smoke_test_multi_local.py"
+    },
+    {
+      "path": "scripts/smoke_test_single_v4.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/smoke_test_single_v4.py"
+    },
+    {
+      "path": "scripts/test_bdqn_posterior.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/test_bdqn_posterior.py"
+    },
+    {
+      "path": "scripts/train.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train.py"
+    },
+    {
+      "path": "scripts/train_multi_local.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train_multi_local.py"
+    },
+    {
+      "path": "scripts/train_qmix.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train_qmix.py"
+    },
+    {
+      "path": "scripts/train_shared.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train_shared.py"
+    },
+    {
+      "path": "scripts/train_shared_bdqn.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train_shared_bdqn.py"
+    },
+    {
+      "path": "scripts/train_thesis_multi.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train_thesis_multi.py"
+    },
+    {
+      "path": "scripts/train_thesis_single.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/train_thesis_single.py"
+    },
+    {
+      "path": "scripts/validate_ctde.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/validate_ctde.py"
+    },
+    {
+      "path": "scripts/visualize_bayes_qmix.py",
+      "backup": ".reward_v4_backup/20260729_181501/scripts/visualize_bayes_qmix.py"
+    }
+  ],
+  "changed_files": [
+    "scripts/evaluate.py",
+    "scripts/evaluate_baselines.py",
+    "scripts/run_tests.py",
+    "scripts/train.py",
+    "scripts/train_multi_local.py",
+    "scripts/train_qmix.py",
+    "scripts/train_shared.py",
+    "src/uav_search_belief20/envs/multi_drone_env.py",
+    "src/uav_search_belief20/envs/primitive_search_env.py",
+    "src/uav_search_belief20/experiments/single_ablation.py"
+  ],
+  "created_files": [
+    "scripts/check_reward_v4_install.py",
+    "scripts/run_reward_v4_smoke.sh",
+    "scripts/set_reward_v4_weights.py",
+    "src/uav_search_belief20/rewards/__init__.py",
+    "src/uav_search_belief20/rewards/potential_reward.py",
+    "tests/test_reward_v4_simple.py"
+  ],
+  "checkpoint_score_files": [
+    "scripts/train.py",
+    "scripts/train_multi_local.py",
+    "scripts/train_qmix.py",
+    "scripts/train_shared.py"
+  ]
+}

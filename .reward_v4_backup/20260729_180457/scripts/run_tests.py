@@ -25,7 +25,7 @@ def run_and_check(cmd, log_path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("reward_version", nargs="?", default="v4_potential_simple")
+    parser.add_argument("reward_version", nargs="?", default="v3_frontier")
     parser.add_argument("algo_arg", nargs="?", default="ddqn")
     parser.add_argument("seed_arg", nargs="?", default="43")
     args = parser.parse_args()
