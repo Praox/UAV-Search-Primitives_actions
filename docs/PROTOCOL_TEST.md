@@ -436,3 +436,159 @@ sur cinq seeds aléatoires, la performance finale dépasse la random masquée ;
 l'amélioration porte sur completed et completed_value, pas uniquementsur la reward ou la couverture ;
 
 les résultats restent positifs sur les 1000 seeds de test jamais utiliséspendant l'entraînement ou la sélection de checkpoint.
+
+
+
+
+
+pip install -e .
+pip install matplotlib
+
+Vérifie la syntaxe :
+
+python -m py_compile \
+  src/uav_search_belief20/envs/thesis_envs.py \
+  scripts/train_thesis_single.py \
+  scripts/train_thesis_multi.py \
+  scripts/plot_thesis_learning.py
+2. Faire un premier entraînement single
+
+Commence par DDQN, sur un seul seed :
+
+python scripts/train_thesis_single.py \
+  --algo ddqn \
+  --seed 42 \
+  --episodes 500 \
+  --observation-frame egocentric \
+  --reward-mode task_potential \
+  --coverage-potential-scale 10 \
+  --detection-potential-scale 1 \
+  --progress-potential-scale 2 \
+  --eval-every 25 \
+  --validation-episodes 50 \
+  --skip-final-eval \
+  --run-dir runs/single_ddqn_ego/seed42
+
+Tu obtiendras notamment :
+
+runs/single_ddqn_ego/seed42/
+├── metrics.csv
+├── best.pt
+├── latest.pt
+├── run_config.json
+└── training_status.json
+
+Le metrics.csv contient notamment :
+
+episode
+validation_reward
+validation_completed
+validation_completed_value
+validation_coverage
+validation_first_completion
+validation_tracking_progress
+loss
+q_mean
+target_mean
+epsilon
+
+Ces colonnes sont déjà enregistrées par le trainer single.
+
+3. Générer les courbes d’un seul run
+python scripts/plot_thesis_learning.py \
+  --group "DDQN ego seed42=runs/single_ddqn_ego/seed42" \
+  --output-dir figures/single_ddqn_seed42 \
+  --smooth 3 \
+  --show-seeds \
+  --title-prefix "Single UAV DDQN"
+
+
+  4. Faire tourner plusieurs seeds
+
+Pour conclure qu’il y a réellement apprentissage, un seul seed ne suffit pas.
+
+for SEED in 42 43 44 45 46; do
+  python scripts/train_thesis_single.py \
+    --algo ddqn \
+    --seed "$SEED" \
+    --episodes 1500 \
+    --observation-frame egocentric \
+    --reward-mode task_potential \
+    --coverage-potential-scale 10 \
+    --detection-potential-scale 1 \
+    --progress-potential-scale 2 \
+    --eval-every 50 \
+    --validation-episodes 100 \
+    --skip-final-eval \
+    --run-dir "runs/single_ddqn_ego/seed${SEED}"
+done
+
+Puis génère une courbe moyenne avec les cinq seeds :
+
+python scripts/plot_thesis_learning.py \
+  --group "DDQN egocentrique=runs/single_ddqn_ego/seed*" \
+  --output-dir figures/single_ddqn_ego \
+  --smooth 3 \
+  --show-seeds \
+  --title-prefix "Single UAV"
+
+
+
+  puis
+
+  for SEED in 42 43 44 45 46; do
+  python scripts/train_thesis_multi.py \
+    --algo shared_ddqn \
+    --seed "$SEED" \
+    --episodes 2000 \
+    --n-agents 3 \
+    --observation-frame egocentric \
+    --reward-mode task_potential \
+    --coverage-potential-scale 10 \
+    --detection-potential-scale 1 \
+    --progress-potential-scale 2 \
+    --global-state-mode memory_union \
+    --eval-every 50 \
+    --validation-episodes 100 \
+    --skip-final-eval \
+    --run-dir "runs/multi_shared_ddqn_ego/seed${SEED}"
+done
+
+Génère ensuite les courbes :
+
+python scripts/plot_thesis_learning.py \
+  --group "Shared-DDQN=runs/multi_shared_ddqn_ego/seed*" \
+  --output-dir figures/multi_shared_ddqn_ego \
+  --smooth 3 \
+  --show-seeds \
+  --title-prefix "Multi-UAV Shared-DDQN"
+
+Puis QMIX :
+
+for SEED in 42 43 44 45 46; do
+  python scripts/train_thesis_multi.py \
+    --algo qmix_ddqn \
+    --seed "$SEED" \
+    --episodes 2500 \
+    --n-agents 3 \
+    --observation-frame egocentric \
+    --reward-mode task_potential \
+    --coverage-potential-scale 10 \
+    --detection-potential-scale 1 \
+    --progress-potential-scale 2 \
+    --global-state-mode memory_union \
+    --eval-every 50 \
+    --validation-episodes 100 \
+    --skip-final-eval \
+    --run-dir "runs/multi_qmix_ddqn_ego/seed${SEED}"
+done
+
+Comparaison visuelle :
+
+python scripts/plot_thesis_learning.py \
+  --group "Shared-DDQN=runs/multi_shared_ddqn_ego/seed*" \
+  --group "QMIX-DDQN=runs/multi_qmix_ddqn_ego/seed*" \
+  --output-dir figures/multi_comparison \
+  --smooth 3 \
+  --show-seeds \
+  --title-prefix "Multi-UAV"
