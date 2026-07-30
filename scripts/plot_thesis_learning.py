@@ -57,19 +57,19 @@ DEFAULT_METRICS = [
 ]
 
 METRIC_LABELS = {
-    "validation_completed": "Cibles complétées",
-    "validation_completed_value": "Valeur complétée",
-    "validation_coverage": "Couverture",
-    "validation_reward": "Reward de validation",
-    "validation_first_completion": "Premier achèvement (étape)",
-    "validation_first_detection": "Première détection (étape)",
-    "validation_tracking_progress": "Ratio de progression tracking",
-    "validation_stay": "Ratio STAY",
-    "validation_collision": "Ratio de collision",
-    "validation_overlap": "Chevauchement de couverture",
+    "validation_completed": "Completed target",
+    "validation_completed_value": "Completed value",
+    "validation_coverage": "Coverage",
+    "validation_reward": "Validation reward",
+    "validation_first_completion": "First completion (step)",
+    "validation_first_detection": "First detection (step)",
+    "validation_tracking_progress": "Tracking progress ratio",
+    "validation_stay": "STAY Ratio ",
+    "validation_collision": "collision ratio",
+    "validation_overlap": "Coverage overlap ratio",
     "loss": "Loss",
-    "q_mean": "Q moyen",
-    "target_mean": "Target Bellman moyen",
+    "q_mean": "Q mean",
+    "target_mean": "Target Bellman mean",
     "epsilon": "Epsilon",
 }
 
