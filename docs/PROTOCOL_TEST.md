@@ -648,3 +648,53 @@ python scripts/plot_thesis_learning.py \
   --smooth 3 \
   --show-seeds \
   --title-prefix "Multi-UAV"
+
+
+  Exemple single-UAV
+python scripts/evaluate_thesis_checkpoint.py \
+  --scope single \
+  --run-dir runs/single_ddqn_ego_legacy_p1/seed42 \
+  --episodes 1000 \
+  --seed-base 200000 \
+  --device auto
+
+
+Exemple multi-UAV
+python scripts/evaluate_thesis_checkpoint.py \
+  --scope multi \
+  --run-dir runs/multi_bayesian_qmix_ego_legacy_p07/seed42 \
+  --episodes 1000 \
+  --seed-base 200000 \
+  --device auto
+
+  Pour plusieurs seeds :
+
+for RUN in runs/single_ddqn_ego_legacy_p1/seed*; do
+  python scripts/evaluate_thesis_checkpoint.py \
+    --scope single \
+    --run-dir "$RUN" \
+    --episodes 1000 \
+    --seed-base 200000 \
+    --device auto
+done
+
+Puis lance :
+
+python scripts/aggregate_final_tests.py \
+  --glob "runs/single_ddqn_ego_legacy_p1/seed*/final_test.json" \
+  --mode mean \
+  --output-dir results/single_ddqn_ego_legacy_p1
+
+Pour BDQN sampled :
+
+python scripts/aggregate_final_tests.py \
+  --glob "runs/single_bdqn_ego_legacy_p1/seed*/final_test.json" \
+  --mode sample \
+  --output-dir results/single_bdqn_ego_legacy_p1_sampled
+
+Pour le multi :
+
+python scripts/aggregate_final_tests.py \
+  --glob "runs/multi_bayesian_qmix_ego_legacy_p07/seed*/final_test.json" \
+  --mode mean \
+  --output-dir results/multi_bayesian_qmix_ego_legacy_p07
