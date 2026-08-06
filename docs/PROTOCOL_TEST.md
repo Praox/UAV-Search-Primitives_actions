@@ -467,7 +467,38 @@ python scripts/train_thesis_single.py \
   --eval-every 25 \
   --validation-episodes 50 \
   --skip-final-eval \
-  --run-dir runs/single_ddqn_ego/seed42
+  --run-dir runs/single_ddqn_ego/test/normal/seed42
+
+
+python scripts/train_thesis_single.py \
+  --algo ddqn \
+  --seed 42 \
+  --episodes 900 \
+  --observation-frame global \
+  --reward-mode task_potential \
+  --coverage-potential-scale 10 \
+  --detection-potential-scale 1 \
+  --progress-potential-scale 2 \
+  --eval-every 25 \
+  --validation-episodes 50 \
+  --skip-final-eval \
+  --run-dir runs/single_ddqn_ego/test/global_task/seed42
+
+
+python scripts/train_thesis_single.py \
+  --algo ddqn \
+  --seed 42 \
+  --episodes 900 \
+  --observation-frame global \
+  --reward-mode legacy \
+  --coverage-potential-scale 10 \
+  --detection-potential-scale 1 \
+  --progress-potential-scale 2 \
+  --eval-every 25 \
+  --validation-episodes 50 \
+  --skip-final-eval \
+  --run-dir runs/single_ddqn_ego/test/global_legacy/seed42
+
 
 Tu obtiendras notamment :
 
@@ -495,9 +526,14 @@ epsilon
 Ces colonnes sont déjà enregistrées par le trainer single.
 
 3. Générer les courbes d’un seul run
+
+
 python scripts/plot_thesis_learning.py \
-  --group "DDQN ego seed42=runs/single_ddqn_ego/seed42" \
-  --output-dir figures/single_ddqn_seed42 \
+  --group "DDQN centered_legacy=runs/single_ddqn_ego/test/ego_legacy/seed42" \
+  --group "DDQN global_potential=runs/single_ddqn_ego/test/global_task/seed42" \
+  --group "DDQN centered_potential=runs/single_ddqn_ego/test/ego_task/seed42" \
+  --group "DDQN global_legacy=runs/single_ddqn_ego/test/global_legacy/seed42" \
+  --output-dir figures/single_ddqn_seed42/test/all/ \
   --smooth 3 \
   --show-seeds \
   --title-prefix "Single UAV DDQN"
@@ -507,32 +543,37 @@ python scripts/plot_thesis_learning.py \
 
 Pour conclure qu’il y a réellement apprentissage, un seul seed ne suffit pas.
 
-for SEED in 42 43 44 45 46; do
+for SEED in 42 43 44 45 ; do
   python scripts/train_thesis_single.py \
-    --algo ddqn \
+    --algo bdqn \
     --seed "$SEED" \
     --episodes 1500 \
     --observation-frame egocentric \
-    --reward-mode task_potential \
-    --coverage-potential-scale 10 \
-    --detection-potential-scale 1 \
-    --progress-potential-scale 2 \
+    --reward-mode legacy \
+    --detection-probability 0.7 \
     --eval-every 50 \
     --validation-episodes 100 \
     --skip-final-eval \
-    --run-dir "runs/single_ddqn_ego/seed${SEED}"
+    --run-dir "runs/refund/test/ego_legacy/p0_7/bdqn/seed${SEED}"
 done
 
 Puis génère une courbe moyenne avec les cinq seeds :
 
 python scripts/plot_thesis_learning.py \
-  --group "DDQN egocentrique=runs/single_ddqn_ego/seed*" \
-  --output-dir figures/single_ddqn_ego \
+  --group "DDQN p0.7\=runs/refund/test/ego_legacy/p0_7/ddqn/seed*" \
+  --group "BDQN p0.7\=runs/refund/test/ego_legacy/p0_7/bdqn/seed*" \
+  --output-dir figures/single/test/ego_legacy/p0_7/ddqn_vs_bdqn \
   --smooth 3 \
   --show-seeds \
   --title-prefix "Single UAV"
 
-
+python scripts/plot_thesis_learning.py \
+  --group "BDQN ego_legacy=runs/refund/single_bdqn_ego/2nd_run/seed*" \
+  --group "DDQN ego_legacy=runs/refund/single_ddqn_ego/test/ego_legacy/seed*" \
+  --output-dir figures/single_BDQN_DDQN/ego_legacy/ \
+  --smooth 1 \
+  --show-seeds \
+  --title-prefix "Single UAV"
 
   puis
 
@@ -565,11 +606,27 @@ python scripts/plot_thesis_learning.py \
 
 Puis QMIX :
 
-for SEED in 42 43 44 45 46; do
+for SEED in 42 43 44 45 ; do
   python scripts/train_thesis_multi.py \
-    --algo qmix_ddqn \
+    --algo shared_ddqn \
     --seed "$SEED" \
-    --episodes 2500 \
+    --episodes 1500 \
+    --n-agents 3 \
+    --observation-frame egocentric \
+    --reward-mode legacy \
+    --detection-probability 0.5 \
+    --global-state-mode memory_union \
+    --eval-every 50 \
+    --validation-episodes 100 \
+    --skip-final-eval \
+    --run-dir "runs/refund/multi_ego_leg/p0_5/shared_ddqn/seed${SEED}"
+done
+
+for SEED in 44 45 46 47 ; do
+  python scripts/train_thesis_multi.py \
+    --algo bayes_qmix_independent \
+    --seed "$SEED"\
+    --episodes 1500 \
     --n-agents 3 \
     --observation-frame egocentric \
     --reward-mode task_potential \
@@ -580,15 +637,14 @@ for SEED in 42 43 44 45 46; do
     --eval-every 50 \
     --validation-episodes 100 \
     --skip-final-eval \
-    --run-dir "runs/multi_qmix_ddqn_ego/seed${SEED}"
+    --run-dir "runs/refund/multi_qmix_ddqn_ego/seed${SEED}"
 done
-
 Comparaison visuelle :
 
 python scripts/plot_thesis_learning.py \
-  --group "Shared-DDQN=runs/multi_shared_ddqn_ego/seed*" \
-  --group "QMIX-DDQN=runs/multi_qmix_ddqn_ego/seed*" \
-  --output-dir figures/multi_comparison \
+  --group "DDQN Qmix p0_7=runs/refund/multi_ego_leg/p0_7/qmix_ddqn/seed*" \
+  --group "Bayesian QMIX Independent p0_7=runs/refund/multi_ego_leg/p0_7/qmix_bdqn_indep/seed*" \
+  --output-dir figures/multi_comparison/ego_legacy/p0_7/ddqn_qmix_vs_bayes_qmix_indep/ \
   --smooth 3 \
   --show-seeds \
   --title-prefix "Multi-UAV"
