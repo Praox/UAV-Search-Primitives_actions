@@ -653,7 +653,7 @@ python scripts/plot_thesis_learning.py \
   Exemple single-UAV
 python scripts/evaluate_thesis_checkpoint.py \
   --scope single \
-  --run-dir runs/single_ddqn_ego_legacy_p1/seed42 \
+  --run-dir runs/test/ego_legacy/bdqn/seed42 \
   --episodes 1000 \
   --seed-base 200000 \
   --device auto
@@ -669,9 +669,9 @@ python scripts/evaluate_thesis_checkpoint.py \
 
   Pour plusieurs seeds :
 
-for RUN in runs/single_ddqn_ego_legacy_p1/seed*; do
+for RUN in runs/refund/multi_ego_leg/p1/qmix_bdqn_indep/seed4*; do
   python scripts/evaluate_thesis_checkpoint.py \
-    --scope single \
+    --scope multi \
     --run-dir "$RUN" \
     --episodes 1000 \
     --seed-base 200000 \
