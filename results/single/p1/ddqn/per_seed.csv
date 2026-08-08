@@ -1,0 +1,4 @@
+algo,completed_mean,completed_value_mean,detected_mean,detected_to_completed_ratio,detected_value_mean,first_completion_step_mean,first_detection_step_mean,had_completion_mean,had_detection_mean,reward_mean,run_dir,seed,sensor_coverage_ratio_mean,stay_ratio,tracking_progress_ratio
+ddqn,3.221,4.06,3.356,0.9597735399284862,4.216,26.08542713567839,19.26680040120361,0.995,0.997,31.348890000000008,run2/refund/test/ego_legacy/ddqn/seed43,43,0.7489774999469518,0.0,0.07758217790933167
+ddqn,2.722,3.44,2.937,0.926796050391556,3.688,28.60935910478128,23.292462311557788,0.983,0.995,25.88780000000001,run2/refund/test/ego_legacy/ddqn/seed44,44,0.6801799996197224,0.0,0.060215792335651525
+ddqn,2.756,3.483,2.969,0.9282586729538566,3.715,26.507568113017154,19.254764292878637,0.991,0.997,26.190405000000013,run2/refund/test/ego_legacy/ddqn/seed45,45,0.6850599997490644,0.0,0.060753332762410434

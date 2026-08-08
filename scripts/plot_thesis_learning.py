@@ -536,7 +536,9 @@ def main() -> None:
                 x_values[finite],
                 mean[finite],
                 linewidth=2.2,
-                label=f"{label} (n={matrix.shape[0]})",
+                #Avoir le nombre de seeds ds le label
+                ##label=f"{label} (n={matrix.shape[0]})",
+                label=f"{label}",
             )[0]
 
             # Use the automatically selected line color for its own CI band.
